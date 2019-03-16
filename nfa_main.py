@@ -9,6 +9,7 @@ import errno
 import nfa_config
 import nfa_daemonize
 import nfa_firewall
+import nfa_netify_api
 import nfa_netifyd
 
 __nfa_config_reload = True
@@ -55,6 +56,13 @@ def nfa_main():
             print(jd)
 
     nd.close()
+
+try:
+    nfa_netify_api.get_protocols('https://api.netify.ai/api/v1/lookup/protocols')
+    sys.exit(0)
+except socket.gaierror as e:
+    print("API request failed: %s [%d]" %(e.errstr, e.errno))
+    sys.exit(1)
 
 #try:
 #    nfa_daemonize.start(nfa_main, pid_file='/var/run/netifyd/netify-fwa.pid', debug=True)
