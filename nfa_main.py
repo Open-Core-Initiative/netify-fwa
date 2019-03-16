@@ -3,37 +3,74 @@
 import sys
 import json
 import socket
+import signal
+import errno
 
 import nfa_config
 import nfa_daemonize
-import nfa_socket
-
 import nfa_firewall
+import nfa_netifyd
+
+__nfa_config_reload = True
+__nfa_should_terminate = False
+
+__nfa_config = None
+__nfa_config_dynamic = None
+
+def nfa_signal_handler(signum, frame):
+    global __nfa_config_reload, __nfa_should_terminate
+
+    if signum is signal.SIGHUP.value:
+        __nfa_config_reload = True
+    elif signum is signal.SIGINT.value or signum is signal.SIGTERM.value:
+        print("Exiting...")
+        __nfa_should_terminate = True
+    else:
+        print("Caught unhandled signal: %s" %(signal.Signals(signum).name))
 
 def nfa_main():
-    sd = nfa_socket.connect()
-    fh = sd.makefile()
+    global __nfa_config_reload
+    global __nfa_config, __nfa_config_dynamic
 
-    while True:
-        data = fh.readline()
-        if not data: break
+    __nfa_config = nfa_config.load_static('/etc/netify-fwa/netify-fwa.ini')
 
-        print("Read: %d bytes" %(len(data)))
-        #print("Data: \"%s\"" %(data))
+    nd = nfa_netifyd.netifyd()
+    fh = nd.connect()
 
-        jd = json.loads(data)
+    while not __nfa_should_terminate:
 
-        if 'length' in jd: continue
-        if 'type' in jd:
-            print("Netify Message Type: %s" %(jd['type']))
+        if __nfa_config_reload:
+            config = nfa_config.load_dynamic('/etc/netify-fwa/netify-fwa.json')
+            if config is not None:
+                __nfa_config_dynamic = config
+                __nfa_config_reload = False
+                print("Loaded dynamic configuration.")
 
-        #print(jd)
+        jd = nd.read()
 
-    sd.close()
+        if jd is None:
+            continue
 
-#nfa_daemonize.start(nfa_main, pid_file='/var/run/netifyd/netify-fwa.pid', debug=True)
-fw = nfa_firewall.nfa_fwd1()
-fw.test()
+        if jd['type'] == 'flow':
+            print(jd)
+
+    nd.close()
+
+#try:
+#    nfa_daemonize.start(nfa_main, pid_file='/var/run/netifyd/netify-fwa.pid', debug=True)
+#except BlockingIOError as e:
+#    if e.errno == errno.EAGAIN or e.errno == errno.EACCESS:
+#        print("An instance is already running.")
+#    else:
+#        print("Error starting daemon: %d" %(e.errno))
+#    sys.exit(1)
+
+signal.signal(signal.SIGHUP, nfa_signal_handler)
+signal.signal(signal.SIGINT, nfa_signal_handler)
+signal.signal(signal.SIGTERM, nfa_signal_handler)
+
+fwd1 = nfa_firewall.fwd1()
+fwd1.test()
 
 nfa_main()
 

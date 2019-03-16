@@ -1,11 +1,6 @@
 from firewall import client
 
-class nfa_firewall:
-    """Firewall interface for Netify FWA"""
-
-    #def __init__(self):
-
-class nfa_fwd1(nfa_firewall, client.FirewallClient):
+class fwd1(client.FirewallClient):
     """Firewalld support for Netify FWA"""
 
     def __init__(self):

@@ -26,8 +26,8 @@ class stream_logger(object):
 
 def start(main_func, pid_file=None, debug=False):
     if pid_file is not None:
-        fd_lock = open(pid_file, 'w')
-        fcntl.lockf(fd_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fd_lock = open(pid_file, 'r+')
+        fcntl.flock(fd_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
     # Fork, creating a new process for the child.
     pid = os.fork()
@@ -39,6 +39,9 @@ def start(main_func, pid_file=None, debug=False):
         sys.exit(0)
 
     # This is the child process.  Continue.
+    if pid_file is not None:
+        fd_lock.write('%d' %(os.getpid()))
+        fd_lock.flush()
 
     pid = os.setsid()
     if pid == -1:
@@ -69,8 +72,5 @@ def start(main_func, pid_file=None, debug=False):
     os.umask(0o027)
 
     os.chdir('/')
-
-    fd_lock.write('%d' %(os.getpid()))
-    fd_lock.flush()
 
     main_func()
