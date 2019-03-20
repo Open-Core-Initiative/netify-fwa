@@ -7,22 +7,9 @@
 # Copyright 2019 Darryl Sokoloski <darryl@egloo.ca>
 # Copyright 2007 Jerry Seutter yello (*a*t*) thegeeks.net
 
-import fcntl
 import os
 import sys
-import time
-import logging
-import logging.handlers
-
-class stream_logger(object):
-	def __init__(self, logger, log_level=logging.INFO):
-		self.logger = logger
-		self.log_level = log_level
-		self.linebuf = ''
-
-	def write(self, buf):
-		for line in buf.rstrip().splitlines():
-			self.logger.log(self.log_level, line.rstrip())
+import fcntl
 
 def start(main_func, pid_file=None, debug=False):
     if pid_file is not None:
@@ -56,18 +43,6 @@ def start(main_func, pid_file=None, debug=False):
         for fd in (sys.stdin, sys.stdout, sys.stderr):
             fd.close()
             fd = fd_null
-
-#    syslog_handler = logging.handlers.SysLogHandler()
-#
-#    stdout_logger = logging.getLogger('STDOUT')
-#    sl = stream_logger(stdout_logger, logging.INFO)
-#    sys.stdout = sl
-#    stdout_logger.addHandler(syslog_handler)
-#
-#    stderr_logger = logging.getLogger('STDERR')
-#    sl = stream_logger(stderr_logger, logging.ERROR)
-#    sys.stderr = sl
-#    stderr_logger.addHandler(syslog_handler)
 
     os.umask(0o027)
 

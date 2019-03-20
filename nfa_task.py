@@ -5,6 +5,10 @@ import threading
 import nfa_config
 import nfa_netify_api
 
+from syslog import \
+    openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
+    LOG_DEBUG, LOG_ERR, LOG_WARNING
+
 class api_update(threading.Thread):
     config = None
     exit_success = False
@@ -20,21 +24,28 @@ class api_update(threading.Thread):
         url_api = self.config.get('netify-api', 'url')
 
         try:
-            pages_protocols = nfa_netify_api.get_data(url_api + '/lookup/protocols')
+            pages_protocols = nfa_netify_api.get_data(
+                url_api + '/lookup/protocols'
+            )
 
             if pages_protocols is None:
                 return
 
-            print("Loaded %d protocol pages from Netify API." %(len(pages_protocols)))
+            syslog("Loaded %d protocol pages from Netify API."
+                %(len(pages_protocols)))
 
-            pages_applications = nfa_netify_api.get_data(url_api + '/lookup/applications')
+            pages_applications = nfa_netify_api.get_data(
+                url_api + '/lookup/applications'
+            )
 
             if pages_applications is None:
                 return
 
-            print("Loaded %d application pages from Netify API." %(len(pages_applications)))
+            syslog("Loaded %d application pages from Netify API."
+                %(len(pages_applications)))
         except socket.gaierror as e:
-            print("API request failed: %s [%d]" %(e.errstr, e.errno))
+            syslog(LOG_WARNING,
+                "API request failed: %s [%d]" %(e.errstr, e.errno))
 
         protocols = {}
 
@@ -49,7 +60,7 @@ class api_update(threading.Thread):
 
                 protocols[proto['id']] = proto['protocol_category']['id'];
 
-        print("Indexed %d protocols." %(len(protocols)))
+        syslog(LOG_DEBUG, "Indexed %d protocols." %(len(protocols)))
 
         applications = {}
 
@@ -64,7 +75,7 @@ class api_update(threading.Thread):
 
                 applications[app['id']] = app['application_category']['id'];
 
-        print("Indexed %d applications." %(len(applications)))
+        syslog(LOG_DEBUG, "Indexed %d applications." %(len(applications)))
 
         data = { 'protocols': protocols, 'applications': applications }
 
@@ -74,10 +85,10 @@ class api_update(threading.Thread):
             with open(path_cache, 'w') as fh:
                 json.dump(data, fh)
         except FileNotFoundError as e:
-            print("Error writing JSON API file: %s: File not found." %(path_cache))
+            syslog(LOG_ERR, "Error writing JSON API file: %s: File not found." %(path_cache))
             return
         except IOError as e:
-            print("Error writing JSON API file: %s" %(path_cache))
+            syslog(LOG_ERR, "Error writing JSON API file: %s" %(path_cache))
             return
 
         self.exit_success = True

@@ -1,5 +1,9 @@
 from firewall import client
 
+from syslog import \
+    openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
+    LOG_DEBUG, LOG_ERR, LOG_WARNING
+
 class fwd1(client.FirewallClient):
     """Firewalld support for Netify FWA"""
 
@@ -10,5 +14,5 @@ class fwd1(client.FirewallClient):
         zone_default = self.getDefaultZone()
         zone_settings = self.getZoneSettings(zone_default)
 
-        print(" name: %s" %(zone_settings.getShort()))
-        print(" desc: %s" %(zone_settings.getDescription()))
+        syslog(LOG_DEBUG, " name: %s" %(zone_settings.getShort()))
+        syslog(LOG_DEBUG, " desc: %s" %(zone_settings.getDescription()))
