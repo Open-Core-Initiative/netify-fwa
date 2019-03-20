@@ -7,6 +7,8 @@ import errno
 import time
 import os.path
 
+from getopt import getopt, GetoptError
+
 from signal import \
     signal, Signals, SIGHUP, SIGINT, SIGTERM
 
@@ -16,9 +18,12 @@ from syslog import \
 
 import nfa_config
 import nfa_daemonize
-#import nfa_firewall
 import nfa_netifyd
 import nfa_task
+
+from nfa_version import NFA_VERSION
+
+__nfa_debug = False
 
 __nfa_config_reload = True
 __nfa_should_terminate = False
@@ -26,6 +31,8 @@ __nfa_should_terminate = False
 __nfa_config = None
 __nfa_config_dynamic = None
 __nfa_config_api = None
+
+__nfa_pid_file = '/var/run/netify-fwa/netify-fwa.pid'
 
 def nfa_signal_handler(signum, frame):
     global __nfa_config_reload, __nfa_should_terminate
@@ -51,6 +58,10 @@ def nfa_signal_handler(signum, frame):
 def nfa_main():
     global __nfa_config_reload
     global __nfa_config, __nfa_config_dynamic
+
+    signal(SIGHUP, nfa_signal_handler)
+    signal(SIGINT, nfa_signal_handler)
+    signal(SIGTERM, nfa_signal_handler)
 
     fh = None
     nd = nfa_netifyd.netifyd()
@@ -101,7 +112,11 @@ def api_update_test():
 
 def daemonize():
     try:
-        nfa_daemonize.start(nfa_main, pid_file='/var/run/netifyd/netify-fwa.pid', debug=True)
+        nfa_daemonize.start(
+            nfa_main,
+            pid_file=__nfa_pid_file,
+            debug=__nfa_debug
+        )
     except BlockingIOError as e:
         if e.errno == errno.EAGAIN or e.errno == errno.EACCESS:
             syslog(LOG_ERR, "An instance is already running.")
@@ -109,16 +124,43 @@ def daemonize():
             syslog(LOG_ERR, "Error starting daemon: %d" %(e.errno))
         sys.exit(1)
 
-signal(SIGHUP, nfa_signal_handler)
-signal(SIGINT, nfa_signal_handler)
-signal(SIGTERM, nfa_signal_handler)
-
-openlog('netify-fwa', LOG_PID | LOG_PERROR, LOG_DAEMON)
-
 __nfa_config = nfa_config.load_static('/etc/netify-fwa/netify-fwa.ini')
 
-#fwd1 = nfa_firewall.fwd1()
-#fwd1.test()
+try:
+    params, args = getopt(sys.argv[1:], 'd', ('debug','help'))
+except GetoptError as e:
+    print("Parameter error: %s" %(e.msg))
+    print("Try option --help for usage information.")
+    sys.exit(1)
+
+for option in params:
+    if option[0] == '-d' or option[0] == '--debug':
+        __nfa_debug = True
+    elif option[0] == '--help':
+        print("Netify FWA v%s" %(NFA_VERSION))
+        sys.exit(0)
+
+try:
+    fw_engine = __nfa_config.get('netify-fwa', 'firewall-engine')
+except NoOptionError as e:
+    printf("Mandatory configuration option not set: firewall-engine")
+
+if fw_engine == 'iptables':
+    from nfa_iptables import nfa_firewall
+elif fw_engine == 'firewalld':
+    from nfa_firewalld import nfa_firewall
+else:
+    print("Unsupported firewall engine: %s" %(fw_engine))
+    sys.exit(1)
+
+openlog('netify-fwa', LOG_PID | LOG_PERROR, LOG_DAEMON)
+syslog("Netify FWA v%s started." %(NFA_VERSION))
+
+fw = nfa_firewall()
+fw.test()
+
+if not __nfa_debug:
+    daemonize()
 
 nfa_main()
 

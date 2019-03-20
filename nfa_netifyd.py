@@ -41,12 +41,13 @@ class netifyd:
             return None
 
         try:
+            syslog("Connecting to: %s" %(uri))
+
             if uri_parsed.scheme == 'unix':
-                syslog("Connecting to: %s" %(uri_parsed.path))
                 self.sd.connect(uri_parsed.path)
             else:
-                syslog("Connecting to: %s:%d" %(uri_parsed.hostname, port))
                 self.sd.connect((uri_parsed.hostname, port))
+
         except socket.error as e:
             syslog(LOG_ERR, "Error connecting to: %s: %s" %(uri, e.strerror))
             return None

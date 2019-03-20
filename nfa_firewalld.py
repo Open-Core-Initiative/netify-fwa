@@ -4,7 +4,7 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
-class fwd1(client.FirewallClient):
+class nfa_firewall(client.FirewallClient):
     """Firewalld support for Netify FWA"""
 
     def __init__(self):

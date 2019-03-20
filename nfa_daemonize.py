@@ -11,10 +11,18 @@ import os
 import sys
 import fcntl
 
+from syslog import \
+    openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
+    LOG_DEBUG, LOG_ERR, LOG_WARNING
+
 def start(main_func, pid_file=None, debug=False):
     if pid_file is not None:
-        fd_lock = open(pid_file, 'r+')
-        fcntl.flock(fd_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        try:
+            fd_lock = open(pid_file, 'w+')
+            fcntl.flock(fd_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except FileNotFoundError as e:
+            syslog(LOG_ERR, "Unable to create PID file: %s" %(pid_file))
+            sys.exit(1)
 
     # Fork, creating a new process for the child.
     pid = os.fork()
