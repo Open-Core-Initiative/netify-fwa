@@ -3,6 +3,8 @@ import json
 import socket
 import select
 
+from urllib.parse import urlparse
+
 netifyd_json_version = 1.7
 
 class netifyd:
@@ -17,25 +19,34 @@ class netifyd:
     flows = 0
     flows_delta = 0
 
-    def connect(self, addr='/var/run/netifyd/netifyd.sock', port=None):
-        self.uri = 'netifyd://' + addr
+    def connect(self, uri):
+        self.uri = uri
 
-        if port is None:
+        port = 2100
+        uri_parsed = urlparse(uri)
+
+        if uri_parsed.scheme == 'file':
             self.sd = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        else:
-            self.uri += ':' + str(port)
+        elif uri_parsed.scheme == 'tcp':
             self.sd = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        try:
-            if port is None:
-                self.sd.connect(addr)
-            else:
-                self.sd.connect(addr, port)
-        except socket.error as e:
-            print("Error connecting to: %s: %s" %(self.uri, e.strerror))
+            if uri_parsed.port is not None:
+                port = uri_parsed.port
+        else:
+            print("Invalid netify-agent scheme (only tcp:// and file:// are supported).")
             return None
 
-        print("Connected to: %s" %(self.uri))
+        try:
+            if uri_parsed.scheme == 'file':
+                print("Connecting to: %s" %(uri_parsed.path))
+                self.sd.connect(uri_parsed.path)
+            else:
+                print("Connecting to: %s:%d" %(uri_parsed.hostname, port))
+                self.sd.connect((uri_parsed.hostname, port))
+        except socket.error as e:
+            print("Error connecting to: %s: %s" %(uri, e.strerror))
+            return None
+
+        print("Connected to: %s" %(uri))
 
         self.fh = self.sd.makefile()
 
@@ -45,7 +56,7 @@ class netifyd:
         fd_read = [ self.sd ]
         fd_write = []
 
-        readable, writable, exceptional = select.select(fd_read, fd_write, fd_read, 0.5)
+        readable, writable, exceptional = select.select(fd_read, fd_write, fd_read, 1.0)
 
         if not len(readable):
             return None
@@ -94,4 +105,5 @@ class netifyd:
         return jd
 
     def close(self):
-        self.sd.close()
+        if self.sd is not None:
+            self.sd.close()
