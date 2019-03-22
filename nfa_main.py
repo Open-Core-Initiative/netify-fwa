@@ -125,6 +125,10 @@ def nfa_fw_cleanup():
     __nfa_fw.delete_chain('mangle', 'NFA_egress')
     __nfa_fw.delete_chain('mangle', 'NFA_egress', 6)
 
+    for i in nfa_ipset.nfa_ipset_list():
+        ipset = nfa_ipset.nfa_ipset(i)
+        ipset.destroy()
+
 def nfa_fw_sync():
     ipsets = nfa_ipset.nfa_ipset_list()
 
