@@ -66,17 +66,43 @@ def nfa_main():
     fh = None
     nd = nfa_netifyd.netifyd()
 
-    api_task = None
+    api_task_update = None
+    api_ttl_cache = __nfa_config.get('netify-api', 'ttl-cache')
+
     config_dynamic = __nfa_config.get('netify-fwa', 'path-config-dynamic')
+    config_api = __nfa_config.get('netify-api', 'path-cache')
 
     while not __nfa_should_terminate:
 
-        if __nfa_config_reload and os.path.isfile(config_dynamic):
+        if __nfa_config_reload and \
+            os.path.isfile(config_dynamic) and os.path.isfile(config_api):
+
             config = nfa_config.load_dynamic(config_dynamic)
             if config is not None:
                 __nfa_config_dynamic = config
-                __nfa_config_reload = False
                 syslog("Loaded dynamic configuration.")
+
+            config = nfa_config.load_dynamic(config_api)
+            if config is not None:
+                __nfa_config_api = config
+                syslog("Loaded API configuration cache.")
+
+            if __nfa_config_dynamic is not None and __nfa_config_api is not None:
+                __nfa_config_reload = False
+
+        if api_task_update is None and (not os.path.isfile(config_api) or
+            int(os.path.getmtime(config_api)) + int(api_ttl_cache) < int(time.time())):
+            syslog(LOG_DEBUG, "Updating API config cache.")
+            api_task_update = nfa_task.api_update(__nfa_config)
+            api_task_update.start()
+        elif api_task_update is not None and not api_task_update.is_alive():
+            api_task_update.join()
+            if api_task_update.exit_success is not True:
+                syslog(LOG_DEBUG, "API config cache update failed.")
+                os.remove(config_api)
+            else:
+                __nfa_config_reload = True
+            api_task_update = None
 
         if fh is None:
             fh = nd.connect(
@@ -91,8 +117,8 @@ def nfa_main():
                 time.sleep(5)
                 continue
 
-            if jd['type'] == 'flow':
-                syslog(LOG_DEBUG, str(jd))
+            #if jd['type'] == 'flow':
+            #    syslog(LOG_DEBUG, str(jd))
 
     nd.close()
 
@@ -157,7 +183,23 @@ openlog('netify-fwa', LOG_PID | LOG_PERROR, LOG_DAEMON)
 syslog("Netify FWA v%s started." %(NFA_VERSION))
 
 fw = nfa_firewall()
-fw.test()
+syslog("Firewall engine: %s" %(fw.get_version()))
+
+if not fw.is_running():
+    syslog(LOG_ERR, "Firewall engine is not running.")
+    sys.exit(1)
+
+#fw.test()
+
+fw.add_chain('mangle', 'NFA_PREROUTING_ingress')
+fw.add_chain('mangle', 'NFA_PREROUTING_ingress', 'ipv6')
+fw.add_chain('mangle', 'NFA_PREROUTING_egress')
+fw.add_chain('mangle', 'NFA_PREROUTING_egress', 'ipv6')
+
+fw.add_rule('mangle', 'PREROUTING', '-i host0 -j NFA_PREROUTING_ingress')
+fw.add_rule('mangle', 'PREROUTING', '-i eth0 -j NFA_PREROUTING_egress')
+fw.add_rule('mangle', 'PREROUTING', '-i host0 -j NFA_PREROUTING_ingress', 'ipv6')
+fw.add_rule('mangle', 'PREROUTING', '-i eth0 -j NFA_PREROUTING_egress', 'ipv6')
 
 if not __nfa_debug:
     daemonize()

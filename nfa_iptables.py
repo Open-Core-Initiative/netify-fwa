@@ -10,9 +10,15 @@ class nfa_firewall():
     def __init__(self):
         super().__init__()
 
-    def test(self):
+    def get_version(self):
         result = subprocess.run(
             ["iptables", "--version"],
             stdout=subprocess.PIPE, universal_newlines=True
         )
-        syslog(LOG_DEBUG, "Firewall engine: %s" %(result.stdout))
+        return result.stdout
+
+    def is_running(self):
+        return True
+
+    def test(self):
+        pass
