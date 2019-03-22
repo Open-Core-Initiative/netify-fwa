@@ -61,37 +61,64 @@ class nfa_firewall(client.FirewallClient):
         for chain in all_chains:
             if chain[2].startswith('NFA_'):
                 nfa_chains.append(chain)
-        # chains: [('ipv4', 'mangle', 'NFA_test')]
         return nfa_chains
 
-    def chain_exists(self, table, name, ipv='ipv4'):
+    def chain_exists(self, table, name, ipv=4):
+        if ipv == 6:
+            ipv = 'ipv6'
+        else:
+            ipv = 'ipv4'
         chains = self.get_chains()
         for chain in chains:
             if ipv == chain[0] and table == chain[1] and name[0:28] == chain[2]:
                 return True
         return False
 
-    def add_chain(self, table, name, ipv='ipv4'):
+    def add_chain(self, table, name, ipv=4):
+        if ipv == 6:
+            ipv = 'ipv6'
+        else:
+            ipv = 'ipv4'
         if not self.chain_exists(table, name, ipv):
             self.addChain(ipv, table, name[0:28])
 
-    def flush_chain(self, table, name, ipv='ipv4'):
+    def flush_chain(self, table, name, ipv=4):
+        if ipv == 6:
+            ipv = 'ipv6'
+        else:
+            ipv = 'ipv4'
         self.removeRules(ipv, table, name[0:28])
 
-    def delete_chain(self, table, name, ipv='ipv4'):
+    def delete_chain(self, table, name, ipv=4):
+        if ipv == 6:
+            ipv = 'ipv6'
+        else:
+            ipv = 'ipv4'
         if self.chain_exists(table, name, ipv):
             self.removeChain(ipv, table, name[0:28])
 
     # Rules
 
-    def rule_exists(self, table, chain, args, ipv='ipv4', priority=0):
+    def rule_exists(self, table, chain, args, ipv=4, priority=0):
+        if ipv == 6:
+            ipv = 'ipv6'
+        else:
+            ipv = 'ipv4'
         return self.queryRule(ipv, table, chain, priority, splitArgs(args))
 
-    def add_rule(self, table, chain, args, ipv='ipv4', priority=0):
+    def add_rule(self, table, chain, args, ipv=4, priority=0):
+        if ipv == 6:
+            ipv = 'ipv6'
+        else:
+            ipv = 'ipv4'
         if not self.rule_exists(table, chain, args, ipv, priority):
             self.addRule(ipv, table, chain, priority, splitArgs(args))
 
-    def delete_rule(self, table, chain, args, ipv='ipv4', priority=0):
+    def delete_rule(self, table, chain, args, ipv=4, priority=0):
+        if ipv == 6:
+            ipv = 'ipv6'
+        else:
+            ipv = 'ipv4'
         if self.rule_exists(table, chain, args, ipv, priority):
             self.removeRule(ipv, table, chain, priority, splitArgs(args))
 

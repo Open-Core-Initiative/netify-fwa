@@ -20,10 +20,13 @@ import nfa_config
 import nfa_daemonize
 import nfa_netifyd
 import nfa_task
+import nfa_ipset
 
 from nfa_version import NFA_VERSION
 
 __nfa_debug = False
+
+__nfa_pid_file = '/var/run/netify-fwa/netify-fwa.pid'
 
 __nfa_config_reload = True
 __nfa_should_terminate = False
@@ -32,7 +35,7 @@ __nfa_config = None
 __nfa_config_dynamic = None
 __nfa_config_api = None
 
-__nfa_pid_file = '/var/run/netify-fwa/netify-fwa.pid'
+__nfa_fw = None
 
 def nfa_signal_handler(signum, frame):
     global __nfa_config_reload, __nfa_should_terminate
@@ -54,6 +57,76 @@ def nfa_signal_handler(signum, frame):
     else:
         syslog(LOG_WARNING,
             "Caught unhandled signal: %s" %(Signals(signum).name))
+
+def nfa_fw_init():
+    global __nfa_fw
+
+    try:
+        fw_engine = __nfa_config.get('netify-fwa', 'firewall-engine')
+    except NoOptionError as e:
+        printf("Mandatory configuration option not set: firewall-engine")
+        sys.exit(1)
+
+    if fw_engine == 'iptables':
+        from nfa_iptables import nfa_firewall
+    elif fw_engine == 'firewalld':
+        from nfa_firewalld import nfa_firewall
+    else:
+        print("Unsupported firewall engine: %s" %(fw_engine))
+        sys.exit(1)
+
+    openlog('netify-fwa', LOG_PID | LOG_PERROR, LOG_DAEMON)
+    syslog("Netify FWA v%s started." %(NFA_VERSION))
+
+    __nfa_fw = nfa_firewall()
+    syslog("Firewall engine: %s" %(__nfa_fw.get_version()))
+
+    if not __nfa_fw.is_running():
+        syslog(LOG_ERR, "Firewall engine is not running.")
+        sys.exit(1)
+
+    #__nfa_fw.test()
+
+    # Create whitelist chain
+    __nfa_fw.add_chain('mangle', 'NFA_whitelist')
+    __nfa_fw.add_chain('mangle', 'NFA_whitelist', 6)
+
+    # Add jumps to whitelist chain
+    __nfa_fw.add_rule('mangle', 'FORWARD', '-j NFA_whitelist')
+    __nfa_fw.add_rule('mangle', 'FORWARD', '-j NFA_whitelist', 6)
+
+    # Create ingress/egress chains
+    __nfa_fw.add_chain('mangle', 'NFA_ingress')
+    __nfa_fw.add_chain('mangle', 'NFA_ingress', 6)
+    __nfa_fw.add_chain('mangle', 'NFA_egress')
+    __nfa_fw.add_chain('mangle', 'NFA_egress', 6)
+
+    # Add jumps to ingress/egress chains
+    # TODO: replace hard-coded interface names...
+    __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %('host0'))
+    __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %('eth0'))
+    __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %('host0'), 6)
+    __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %('eth0'), 6)
+
+def nfa_fw_cleanup():
+    __nfa_fw.delete_rule('mangle', 'FORWARD', '-j NFA_whitelist')
+    __nfa_fw.delete_rule('mangle', 'FORWARD', '-j NFA_whitelist', 6)
+
+    __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %('host0'))
+    __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %('eth0'))
+    __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %('host0'), 6)
+    __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %('eth0'), 6)
+
+    __nfa_fw.delete_chain('mangle', 'NFA_whitelist')
+    __nfa_fw.delete_chain('mangle', 'NFA_whitelist', 6)
+
+    __nfa_fw.delete_chain('mangle', 'NFA_ingress')
+    __nfa_fw.delete_chain('mangle', 'NFA_ingress', 6)
+    __nfa_fw.delete_chain('mangle', 'NFA_egress')
+    __nfa_fw.delete_chain('mangle', 'NFA_egress', 6)
+
+def nfa_fw_sync():
+    ipsets = nfa_ipset.nfa_ipset_list()
 
 def nfa_main():
     global __nfa_config_reload
@@ -121,6 +194,7 @@ def nfa_main():
             #    syslog(LOG_DEBUG, str(jd))
 
     nd.close()
+    nfa_fw_cleanup()
 
 def api_update_test():
     api_update = nfa_task.api_update(__nfa_config)
@@ -166,40 +240,21 @@ for option in params:
         print("Netify FWA v%s" %(NFA_VERSION))
         sys.exit(0)
 
-try:
-    fw_engine = __nfa_config.get('netify-fwa', 'firewall-engine')
-except NoOptionError as e:
-    printf("Mandatory configuration option not set: firewall-engine")
+nfa_fw_init()
 
-if fw_engine == 'iptables':
-    from nfa_iptables import nfa_firewall
-elif fw_engine == 'firewalld':
-    from nfa_firewalld import nfa_firewall
-else:
-    print("Unsupported firewall engine: %s" %(fw_engine))
-    sys.exit(1)
+ipset = nfa_ipset.nfa_ipset('NFA_test', 60, 6)
 
-openlog('netify-fwa', LOG_PID | LOG_PERROR, LOG_DAEMON)
-syslog("Netify FWA v%s started." %(NFA_VERSION))
+result = ipset.destroy()
+syslog(LOG_DEBUG, "ipset destroy: %s" %(result))
+nfa_ipset.nfa_ipset_list()
 
-fw = nfa_firewall()
-syslog("Firewall engine: %s" %(fw.get_version()))
+result = ipset.create()
+syslog(LOG_DEBUG, "ipset create: %s" %(result))
+nfa_ipset.nfa_ipset_list()
 
-if not fw.is_running():
-    syslog(LOG_ERR, "Firewall engine is not running.")
-    sys.exit(1)
-
-#fw.test()
-
-fw.add_chain('mangle', 'NFA_PREROUTING_ingress')
-fw.add_chain('mangle', 'NFA_PREROUTING_ingress', 'ipv6')
-fw.add_chain('mangle', 'NFA_PREROUTING_egress')
-fw.add_chain('mangle', 'NFA_PREROUTING_egress', 'ipv6')
-
-fw.add_rule('mangle', 'PREROUTING', '-i host0 -j NFA_PREROUTING_ingress')
-fw.add_rule('mangle', 'PREROUTING', '-i eth0 -j NFA_PREROUTING_egress')
-fw.add_rule('mangle', 'PREROUTING', '-i host0 -j NFA_PREROUTING_ingress', 'ipv6')
-fw.add_rule('mangle', 'PREROUTING', '-i eth0 -j NFA_PREROUTING_egress', 'ipv6')
+#result = ipset.upsert('8.8.8.8', 6, 80, '192.168.100.100')
+result = ipset.upsert('fe80::d685:64ff:fe77:354a', 6, 80, 'fe80::d685:64ff:fe77:354b')
+syslog(LOG_DEBUG, "ipset add: %s" %(result))
 
 if not __nfa_debug:
     daemonize()
