@@ -22,7 +22,7 @@ class nfa_firewall(client.FirewallClient):
 
     def is_running(self):
         state = self.get_property("state")
-        syslog(LOG_DEBUG, "Engine state: %s" %(state))
+        syslog(LOG_DEBUG, "Firewall engine state: %s" %(state))
         if state == "RUNNING":
             return True
         return False

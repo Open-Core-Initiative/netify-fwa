@@ -107,10 +107,13 @@ class netifyd:
         if jd['type'] == 'agent_hello':
             self.agent_version = jd['build_version']
             self.json_version = jd['json_version']
+
             syslog("%s: %s" %(self.uri, self.agent_version))
+
             if self.json_version > netifyd_json_version:
                 syslog(LOG_ERR, "%s: Unsupported JSON version." %(self.uri))
                 sys.exit(1)
+
         elif jd['type'] == 'agent_status':
             self.uptime = jd['uptime']
             self.flows = jd['flows']

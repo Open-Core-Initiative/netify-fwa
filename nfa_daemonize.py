@@ -15,7 +15,7 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
-def start(main_func, pid_file=None, debug=False):
+def create(pid_file=None, debug=False):
     if pid_file is not None:
         try:
             fd_lock = open(pid_file, 'w+')
@@ -55,5 +55,3 @@ def start(main_func, pid_file=None, debug=False):
     os.umask(0o027)
 
     os.chdir('/')
-
-    main_func()
