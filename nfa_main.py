@@ -293,6 +293,7 @@ def nfa_main():
             fh = nd.connect(
                 __nfa_config.get('netify-agent', 'socket-uri')
             )
+            time.sleep(1)
         else:
             jd = nd.read()
 
