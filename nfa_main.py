@@ -162,8 +162,6 @@ def nfa_fw_init():
         syslog(LOG_ERR, "Firewall engine is not running.")
         return False
 
-    #__nfa_fw.test()
-
     # Get interfaces by role
     __nfa_fw_interfaces['external'].extend(
         __nfa_fw.get_external_interfaces(__nfa_config)
@@ -228,6 +226,20 @@ def nfa_fw_sync():
     if __nfa_config_dynamic is None:
         return
 
+    #ipset = nfa_ipset.nfa_ipset('NFA_test', 60, 6)
+
+    #result = ipset.destroy()
+    #syslog(LOG_DEBUG, "ipset destroy: %s" %(result))
+    #nfa_ipset.nfa_ipset_list()
+
+    #result = ipset.create()
+    #syslog(LOG_DEBUG, "ipset create: %s" %(result))
+    #nfa_ipset.nfa_ipset_list()
+
+    #result = ipset.upsert('8.8.8.8', 6, 80, '192.168.100.100')
+    #result = ipset.upsert('fe80::d685:64ff:fe77:354a', 6, 80, 'fe80::d685:64ff:fe77:354b')
+    #syslog(LOG_DEBUG, "ipset add: %s" %(result))
+
     ipsets = nfa_ipset.nfa_ipset_list()
 
 def nfa_process_flow(flow):
@@ -266,20 +278,6 @@ def nfa_main():
 
     if os.path.isfile(config_cat_cache):
         __nfa_config_cat_cache = nfa_config.load_cat_cache(config_cat_cache)
-
-    #ipset = nfa_ipset.nfa_ipset('NFA_test', 60, 6)
-
-    #result = ipset.destroy()
-    #syslog(LOG_DEBUG, "ipset destroy: %s" %(result))
-    #nfa_ipset.nfa_ipset_list()
-
-    #result = ipset.create()
-    #syslog(LOG_DEBUG, "ipset create: %s" %(result))
-    #nfa_ipset.nfa_ipset_list()
-
-    #result = ipset.upsert('8.8.8.8', 6, 80, '192.168.100.100')
-    #result = ipset.upsert('fe80::d685:64ff:fe77:354a', 6, 80, 'fe80::d685:64ff:fe77:354b')
-    #syslog(LOG_DEBUG, "ipset add: %s" %(result))
 
     while not __nfa_should_terminate:
 
