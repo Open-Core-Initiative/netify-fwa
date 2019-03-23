@@ -1,5 +1,21 @@
 #!/usr/bin/python3 -Es
 
+# Netify Firewall Agent
+# Copyright (C) 2019 eGloo Incorporated <http://www.egloo.ca>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import sys
 import json
 import socket
@@ -28,6 +44,9 @@ __nfa_debug = False
 
 __nfa_pid_file = '/var/run/netify-fwa/netify-fwa.pid'
 
+__nfa_fw = None
+__nfa_fw_interfaces = { "internal": [], "external": [] }
+
 __nfa_config_reload = True
 __nfa_should_terminate = False
 
@@ -36,8 +55,6 @@ __nfa_config_dynamic = None
 __nfa_config_cat_cache = None
 
 __nfa_log_options = LOG_PID | LOG_PERROR
-
-__nfa_fw = None
 
 def nfa_signal_handler(signum, frame):
     global __nfa_config_reload, __nfa_should_terminate
@@ -116,7 +133,7 @@ def nfa_cat_cache_reload(config_cat_cache, task_cat_update):
     return task_cat_update
 
 def nfa_fw_init():
-    global __nfa_fw
+    global __nfa_fw, __nfa_fw_interfaces
 
     try:
         fw_engine = __nfa_config.get('netify-fwa', 'firewall-engine')
@@ -147,6 +164,19 @@ def nfa_fw_init():
 
     #__nfa_fw.test()
 
+    # Get interfaces by role
+    __nfa_fw_interfaces['external'].extend(
+        __nfa_fw.get_external_interfaces(__nfa_config)
+    )
+    __nfa_fw_interfaces['internal'].extend(
+        __nfa_fw.get_internal_interfaces(__nfa_config)
+    )
+
+    if len(__nfa_fw_interfaces['external']) == 0 and \
+        len(__nfa_fw_interfaces['internal']) == 0:
+        syslog(LOG_ERR, "No interface roles defined.")
+        return False
+
     # Create whitelist chain
     __nfa_fw.add_chain('mangle', 'NFA_whitelist')
     __nfa_fw.add_chain('mangle', 'NFA_whitelist', 6)
@@ -162,11 +192,12 @@ def nfa_fw_init():
     __nfa_fw.add_chain('mangle', 'NFA_egress', 6)
 
     # Add jumps to ingress/egress chains
-    # TODO: replace hard-coded interface names...
-    __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %('host0'))
-    __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %('eth0'))
-    __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %('host0'), 6)
-    __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %('eth0'), 6)
+    for iface in __nfa_fw_interfaces['external']:
+        __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %(iface))
+        __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %(iface), 6)
+    for iface in __nfa_fw_interfaces['internal']:
+        __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %(iface))
+        __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %(iface), 6)
 
     return True
 
@@ -174,10 +205,12 @@ def nfa_fw_cleanup():
     __nfa_fw.delete_rule('mangle', 'FORWARD', '-j NFA_whitelist')
     __nfa_fw.delete_rule('mangle', 'FORWARD', '-j NFA_whitelist', 6)
 
-    __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %('host0'))
-    __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %('eth0'))
-    __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %('host0'), 6)
-    __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %('eth0'), 6)
+    for iface in __nfa_fw_interfaces['external']:
+        __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %(iface))
+        __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %(iface), 6)
+    for iface in __nfa_fw_interfaces['internal']:
+        __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %(iface))
+        __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %(iface), 6)
 
     __nfa_fw.delete_chain('mangle', 'NFA_whitelist')
     __nfa_fw.delete_chain('mangle', 'NFA_whitelist', 6)
@@ -196,6 +229,11 @@ def nfa_fw_sync():
         return
 
     ipsets = nfa_ipset.nfa_ipset_list()
+
+def nfa_process_flow(flow):
+    # syslog(LOG_DEBUG, str(flow))
+    # {'flow': {'ip_nat': False, 'other_ip': '35.182.46.62', 'local_port': 47948, 'other_port': 443, 'local_origin': True, 'detected_protocol': 91, 'ip_version': 4, 'local_ip': '192.168.100.2', 'first_seen_at': 1553313050091, 'detected_protocol_name': 'SSL', 'detection_guessed': 0, 'other_mac': '1a:f8:43:32:1f:c7', 'ip_protocol': 6, 'detected_application_name': 'netify.netify', 'digest': '97efb33a180bbca8435aa32295afc15a06aa5987', 'local_mac': 'f6:97:f1:30:8a:f3', 'detected_application': 275, 'last_seen_at': 1553313050202, 'vlan_id': 0, 'other_type': 'remote', 'ssl': {'client': 'sink.netify.ai', 'version': '0x0303', 'cipher_suite': '0xc030'}}, 'type': 'flow', 'internal': False, 'interface': 'host0'}
+    pass
 
 def nfa_create_daemon():
     try:
@@ -266,8 +304,8 @@ def nfa_main():
                 time.sleep(5)
                 continue
 
-            #if jd['type'] == 'flow':
-            #    syslog(LOG_DEBUG, str(jd))
+            if jd['type'] == 'flow':
+                nfa_process_flow(jd)
 
     nd.close()
     nfa_fw_cleanup()

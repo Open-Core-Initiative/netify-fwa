@@ -1,3 +1,19 @@
+# Netify Firewall Agent
+# Copyright (C) 2019 eGloo Incorporated <http://www.egloo.ca>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import dbus
 
 from firewall import client
@@ -15,6 +31,11 @@ class nfa_firewall(client.FirewallClient):
     def __init__(self):
         super().__init__()
 
+    def ip_version(self, ipv):
+        if ipv == 6:
+            return 'ipv6'
+        return 'ipv4'
+
     # Status
 
     def get_version(self):
@@ -30,6 +51,14 @@ class nfa_firewall(client.FirewallClient):
     # Zones
 
     def get_zone_interfaces(self, zone):
+        ifaces = []
+        fw_config = self.config()
+        try:
+            zone_config = fw_config.getZoneByName(zone)
+        except:
+            syslog(LOG_WARNING, "Zone doesn't exist: %s" %(zone))
+            return ifaces
+
         return self.getInterfaces(zone)
 
     # Interfaces
@@ -37,20 +66,19 @@ class nfa_firewall(client.FirewallClient):
     def get_external_interfaces(self, config):
         ifaces = []
         zones = config.get('firewalld', 'zones-external').split(',')
+
         for zone in zones:
-            ifaces.extend(self.get_zone_interfaces(zone))
+            ifaces.extend(self.get_zone_interfaces(zone.strip()))
+
         return ifaces
 
     def get_internal_interfaces(self, config):
         ifaces = []
         zones = config.get('firewalld', 'zones-internal').split(',')
-        for zone in zones:
-            try:
-                zone_config = self.getZoneByName(zone)
-            except:
-                pass
 
-            #ifaces.extend(self.get_zone_interfaces(zone))
+        for zone in zones:
+            ifaces.extend(self.get_zone_interfaces(zone.strip()))
+
         return ifaces
 
     # Chains
@@ -64,63 +92,42 @@ class nfa_firewall(client.FirewallClient):
         return nfa_chains
 
     def chain_exists(self, table, name, ipv=4):
-        if ipv == 6:
-            ipv = 'ipv6'
-        else:
-            ipv = 'ipv4'
         chains = self.get_chains()
         for chain in chains:
-            if ipv == chain[0] and table == chain[1] and name[0:28] == chain[2]:
+            if self.ip_version(ipv) == chain[0] and \
+                table == chain[1] and name[0:28] == chain[2]:
                 return True
         return False
 
     def add_chain(self, table, name, ipv=4):
-        if ipv == 6:
-            ipv = 'ipv6'
-        else:
-            ipv = 'ipv4'
         if not self.chain_exists(table, name, ipv):
-            self.addChain(ipv, table, name[0:28])
+            self.addChain(self.ip_version(ipv), table, name[0:28])
 
     def flush_chain(self, table, name, ipv=4):
-        if ipv == 6:
-            ipv = 'ipv6'
-        else:
-            ipv = 'ipv4'
-        self.removeRules(ipv, table, name[0:28])
+        self.removeRules(self.ip_version(ipv), table, name[0:28])
 
     def delete_chain(self, table, name, ipv=4):
-        if ipv == 6:
-            ipv = 'ipv6'
-        else:
-            ipv = 'ipv4'
         if self.chain_exists(table, name, ipv):
-            self.removeChain(ipv, table, name[0:28])
+            self.removeChain(self.ip_version(ipv), table, name[0:28])
 
     # Rules
 
     def rule_exists(self, table, chain, args, ipv=4, priority=0):
-        if ipv == 6:
-            ipv = 'ipv6'
-        else:
-            ipv = 'ipv4'
-        return self.queryRule(ipv, table, chain, priority, splitArgs(args))
+        return self.queryRule(
+            self.ip_version(ipv), table, chain, priority, splitArgs(args)
+        )
 
     def add_rule(self, table, chain, args, ipv=4, priority=0):
-        if ipv == 6:
-            ipv = 'ipv6'
-        else:
-            ipv = 'ipv4'
         if not self.rule_exists(table, chain, args, ipv, priority):
-            self.addRule(ipv, table, chain, priority, splitArgs(args))
+            self.addRule(
+                self.ip_version(ipv), table, chain, priority, splitArgs(args)
+            )
 
     def delete_rule(self, table, chain, args, ipv=4, priority=0):
-        if ipv == 6:
-            ipv = 'ipv6'
-        else:
-            ipv = 'ipv4'
         if self.rule_exists(table, chain, args, ipv, priority):
-            self.removeRule(ipv, table, chain, priority, splitArgs(args))
+            self.removeRule(
+                self.ip_version(ipv), table, chain, priority, splitArgs(args)
+            )
 
     # Test
 
