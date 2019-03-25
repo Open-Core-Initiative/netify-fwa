@@ -50,6 +50,8 @@ __nfa_fw_interfaces = { "internal": [], "external": [] }
 __nfa_config_reload = True
 __nfa_should_terminate = False
 
+__nfa_ipsets = None
+
 __nfa_config = None
 __nfa_config_dynamic = None
 __nfa_config_cat_cache = None
@@ -132,6 +134,19 @@ def nfa_cat_cache_reload(config_cat_cache, task_cat_update):
 
     return task_cat_update
 
+def nfa_rule_criteria(rule):
+    criteria = []
+    if 'protocol' in rule:
+        criteria.append(str(rule['protocol']))
+    if 'protocol_category' in rule:
+        criteria.append(str(rule['protocol_category']))
+    if 'application' in rule:
+        criteria.append(str(rule['application']))
+    if 'application_category' in rule:
+        criteria.append(str(rule['application_category']))
+
+    return '_'.join(criteria)
+
 def nfa_fw_init():
     global __nfa_fw, __nfa_fw_interfaces
 
@@ -175,77 +190,174 @@ def nfa_fw_init():
         syslog(LOG_ERR, "No interface roles defined.")
         return False
 
+    mark_base = int(__nfa_config.get('netify-fwa', 'mark-base'), 16)
+    mark_mask = int(__nfa_config.get('netify-fwa', 'mark-mask'), 16)
+
     # Create whitelist chain
-    __nfa_fw.add_chain('mangle', 'NFA_whitelist')
-    __nfa_fw.add_chain('mangle', 'NFA_whitelist', 6)
+    for ipv in [4, 6]:
+        __nfa_fw.add_chain('mangle', 'NFA_whitelist', ipv)
 
-    # Add jumps to whitelist chain
-    __nfa_fw.add_rule('mangle', 'FORWARD', '-j NFA_whitelist')
-    __nfa_fw.add_rule('mangle', 'FORWARD', '-j NFA_whitelist', 6)
+        # Add jumps to whitelist chain
+        __nfa_fw.add_rule('mangle', 'FORWARD', '-j NFA_whitelist', ipv)
 
-    # Create ingress/egress chains
-    __nfa_fw.add_chain('mangle', 'NFA_ingress')
-    __nfa_fw.add_chain('mangle', 'NFA_ingress', 6)
-    __nfa_fw.add_chain('mangle', 'NFA_egress')
-    __nfa_fw.add_chain('mangle', 'NFA_egress', 6)
+        # Create ingress/egress chains
+        __nfa_fw.add_chain('mangle', 'NFA_ingress', ipv)
+        __nfa_fw.add_chain('mangle', 'NFA_egress', ipv)
 
-    # Add jumps to ingress/egress chains
-    for iface in __nfa_fw_interfaces['external']:
-        __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %(iface))
-        __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %(iface), 6)
-    for iface in __nfa_fw_interfaces['internal']:
-        __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %(iface))
-        __nfa_fw.add_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %(iface), 6)
+        # Add jumps to ingress/egress chains
+        for iface in __nfa_fw_interfaces['external']:
+            __nfa_fw.add_rule('mangle', 'FORWARD',
+                '-i %s -j NFA_ingress' %(iface), ipv)
+        for iface in __nfa_fw_interfaces['internal']:
+            __nfa_fw.add_rule('mangle', 'FORWARD',
+                '-i %s -j NFA_egress' %(iface), ipv)
+
+        # Create block chain
+        __nfa_fw.add_chain('mangle', 'NFA_block', ipv)
+
+        __nfa_fw.add_rule('mangle', 'NFA_block', '-j DROP', ipv)
+
+        # Add jumps to block chain
+        __nfa_fw.add_rule('mangle', 'FORWARD',
+            '-m mark --mark 0x%08x/0x%08x -j NFA_block' %(mark_base, mark_mask), ipv)
 
     return True
 
 def nfa_fw_cleanup():
-    __nfa_fw.delete_rule('mangle', 'FORWARD', '-j NFA_whitelist')
-    __nfa_fw.delete_rule('mangle', 'FORWARD', '-j NFA_whitelist', 6)
+    mark_base = int(__nfa_config.get('netify-fwa', 'mark-base'), 16)
+    mark_mask = int(__nfa_config.get('netify-fwa', 'mark-mask'), 16)
 
-    for iface in __nfa_fw_interfaces['external']:
-        __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %(iface))
-        __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_ingress' %(iface), 6)
-    for iface in __nfa_fw_interfaces['internal']:
-        __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %(iface))
-        __nfa_fw.delete_rule('mangle', 'FORWARD', '-i %s -j NFA_egress' %(iface), 6)
+    for ipv in [4, 6]:
+        __nfa_fw.delete_rule('mangle', 'FORWARD', '-j NFA_whitelist', ipv)
 
-    __nfa_fw.delete_chain('mangle', 'NFA_whitelist')
-    __nfa_fw.delete_chain('mangle', 'NFA_whitelist', 6)
+        for iface in __nfa_fw_interfaces['external']:
+            __nfa_fw.delete_rule('mangle', 'FORWARD',
+                '-i %s -j NFA_ingress' %(iface), ipv)
+        for iface in __nfa_fw_interfaces['internal']:
+            __nfa_fw.delete_rule('mangle', 'FORWARD',
+                '-i %s -j NFA_egress' %(iface), ipv)
 
-    __nfa_fw.delete_chain('mangle', 'NFA_ingress')
-    __nfa_fw.delete_chain('mangle', 'NFA_ingress', 6)
-    __nfa_fw.delete_chain('mangle', 'NFA_egress')
-    __nfa_fw.delete_chain('mangle', 'NFA_egress', 6)
+        __nfa_fw.flush_chain('mangle', 'NFA_whitelist', ipv)
+        __nfa_fw.delete_chain('mangle', 'NFA_whitelist', ipv)
 
-    for i in nfa_ipset.nfa_ipset_list():
-        ipset = nfa_ipset.nfa_ipset(i)
-        ipset.destroy()
+        __nfa_fw.flush_chain('mangle', 'NFA_ingress', ipv)
+        __nfa_fw.delete_chain('mangle', 'NFA_ingress', ipv)
+
+        __nfa_fw.flush_chain('mangle', 'NFA_egress', ipv)
+        __nfa_fw.delete_chain('mangle', 'NFA_egress', ipv)
+
+
+        __nfa_fw.delete_rule('mangle', 'FORWARD',
+            '-m mark --mark 0x%08x/0x%08x -j NFA_block' %(mark_base, mark_mask), ipv)
+
+        __nfa_fw.flush_chain('mangle', 'NFA_block', ipv)
+        __nfa_fw.delete_chain('mangle', 'NFA_block', ipv)
+
+    for name in nfa_ipset.nfa_ipset_list():
+        nfa_ipset.nfa_ipset_destroy(name)
 
 def nfa_fw_sync():
+    global __nfa_ipsets
+
     if __nfa_config_dynamic is None:
         return
 
-    #ipset = nfa_ipset.nfa_ipset('NFA_test', 60, 6)
+    for ipv in [4, 6]:
+        __nfa_fw.flush_chain('mangle', 'NFA_whitelist', ipv)
+        __nfa_fw.flush_chain('mangle', 'NFA_ingress', ipv)
+        __nfa_fw.flush_chain('mangle', 'NFA_egress', ipv)
 
-    #result = ipset.destroy()
-    #syslog(LOG_DEBUG, "ipset destroy: %s" %(result))
-    #nfa_ipset.nfa_ipset_list()
+    ttl_match = int(__nfa_config.get('netify-fwa', 'ttl-match'))
+    mark_base = int(__nfa_config.get('netify-fwa', 'mark-base'), 16)
 
-    #result = ipset.create()
-    #syslog(LOG_DEBUG, "ipset create: %s" %(result))
-    #nfa_ipset.nfa_ipset_list()
+    ipsets_new = []
+    ipsets_created = []
+    ipsets_existing = nfa_ipset.nfa_ipset_list()
 
-    #result = ipset.upsert('8.8.8.8', 6, 80, '192.168.100.100')
-    #result = ipset.upsert('fe80::d685:64ff:fe77:354a', 6, 80, 'fe80::d685:64ff:fe77:354b')
-    #syslog(LOG_DEBUG, "ipset add: %s" %(result))
+    for rule in __nfa_config_dynamic['rules']:
+        if rule['type'] != 'block': continue
 
-    ipsets = nfa_ipset.nfa_ipset_list()
+        name = nfa_rule_criteria(rule)
+
+        for ipv in [4, 6]:
+            ipset = nfa_ipset.nfa_ipset(name, ipv, ttl_match)
+            ipsets_new.append(ipset.name)
+
+            if ipset.name not in ipsets_existing and ipset.name not in ipsets_created:
+                if ipset.create():
+                    ipsets_created.append(ipset.name)
+                else:
+                    syslog(LOG_WARNING, "Error creating ipset: %s" %(ipset.name))
+                    continue
+
+            directions = {}
+
+            if 'direction' not in rule or rule['direction'] == 'ingress':
+                directions.update({'ingress': 'src,src,dst'})
+            if 'direction' not in rule or rule['direction'] == 'egress':
+                directions.update({'egress': 'dst,dst,src'})
+
+            for direction, ipset_param in directions.items():
+                __nfa_fw.add_rule('mangle', 'NFA_%s' %(direction),
+                    '-m set --match-set %s %s -j MARK --set-mark 0x%x'
+                    %(ipset.name, ipset_param, mark_base), ipv)
+                mark_base += 1
+
+    for name in ipsets_existing:
+        if name in ipsets_new: continue
+        syslog(LOG_DEBUG, "ipset destroy: %s" %(name))
+        nfa_ipset.nfa_ipset_destroy(name)
+
+    __nfa_ipsets = nfa_ipset.nfa_ipset_list()
+    syslog(LOG_DEBUG, "ipset new: %s" %(__nfa_ipsets))
+
+    for rule in __nfa_config_dynamic['whitelist']:
+        if rule['type'] == 'mac':
+            # TODO: iptables mac module only supports --mac-source
+            continue
+
+        ipv = 0
+        if rule['type'] == 'ipv4':
+            ipv = 4
+        if rule['type'] == 'ipv6':
+            ipv = 6
+
+        directions = ['-s', '-d']
+
+        for direction in directions:
+            __nfa_fw.add_rule('mangle', 'NFA_whitelist',
+                '%s %s -j ACCEPT' %(direction, rule['address']), ipv)
+
+def nfa_flow_matches_rule(flow, rule):
+    if 'protocol' in rule and flow['detected_protocol'] != rule['protocol']:
+        return False
+    if 'application' in rule and flow['detected_application'] != rule['application']:
+        return False
+
+    if 'protocol_category' in rule:
+        if flow['detected_protocol'] not in __nfa_config_cat_cache['protocols']:
+            return False
+        if __nfa_config_cat_cache['protocols'][flow['detected_protocol']] != rule['protocol_category']:
+            return False
+    if 'application_category' in rule:
+        if flow['detected_application'] not in __nfa_config_cat_cache['applications']:
+            return False
+        if __nfa_config_cat_cache['applications'][flow['detected_application']] != rule['application_category']:
+            return False
+
+    return True
 
 def nfa_process_flow(flow):
-    # syslog(LOG_DEBUG, str(flow))
-    # {'flow': {'ip_nat': False, 'other_ip': '35.182.46.62', 'local_port': 47948, 'other_port': 443, 'local_origin': True, 'detected_protocol': 91, 'ip_version': 4, 'local_ip': '192.168.100.2', 'first_seen_at': 1553313050091, 'detected_protocol_name': 'SSL', 'detection_guessed': 0, 'other_mac': '1a:f8:43:32:1f:c7', 'ip_protocol': 6, 'detected_application_name': 'netify.netify', 'digest': '97efb33a180bbca8435aa32295afc15a06aa5987', 'local_mac': 'f6:97:f1:30:8a:f3', 'detected_application': 275, 'last_seen_at': 1553313050202, 'vlan_id': 0, 'other_type': 'remote', 'ssl': {'client': 'sink.netify.ai', 'version': '0x0303', 'cipher_suite': '0xc030'}}, 'type': 'flow', 'internal': False, 'interface': 'host0'}
-    pass
+    for rule in __nfa_config_dynamic['rules']:
+        if rule['type'] != 'block': continue
+        if not nfa_flow_matches_rule(flow['flow'], rule): continue
+
+        name = nfa_rule_criteria(rule)
+        ipset = nfa_ipset.nfa_ipset(name, flow['flow']['ip_version'])
+        if not ipset.upsert( \
+            flow['flow']['other_ip'], flow['flow']['other_port'], \
+            flow['flow']['local_ip']):
+            syslog(LOG_WARNING, "Error upserting ipset with flow match.")
 
 def nfa_create_daemon():
     try:
@@ -281,7 +393,9 @@ def nfa_main():
 
     while not __nfa_should_terminate:
 
-        if __nfa_config_reload: nfa_config_reload()
+        if __nfa_config_reload:
+            nfa_config_reload()
+            nfa_fw_sync()
 
         if task_cat_cache_update is None:
             task_cat_cache_update = nfa_cat_cache_refresh(config_cat_cache, ttl_cat_cache)
@@ -304,6 +418,21 @@ def nfa_main():
                 continue
 
             if jd['type'] == 'flow':
+                # Only interested in flows that have a remote partner
+                if jd['flow']['other_type'] != 'remote': continue
+                # Only interested in flows that originate from internal interfaces
+                if not jd['internal']: continue
+
+                # We can only mark the following: TCP, UDP, SCTP, and UDPLite
+                if jd['flow']['ip_protocol'] != 6 and \
+                    jd['flow']['ip_protocol'] != 17 and \
+                    jd['flow']['ip_protocol'] != 132 and \
+                    jd['flow']['ip_protocol'] != 136: continue
+
+                # Ignore DNS and MDNS
+                if jd['flow']['detected_protocol'] == 5 or \
+                    jd['flow']['detected_protocol'] == 8: continue
+
                 nfa_process_flow(jd)
 
     nd.close()

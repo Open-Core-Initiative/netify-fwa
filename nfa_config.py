@@ -32,6 +32,8 @@ def load_main(path):
     config.set('netify-fwa', 'firewall-engine', 'firewalld')
     config.set('netify-fwa', 'path-config-dynamic', '/etc/netify-fwa/netify-fwa.json')
     config.set('netify-fwa', 'ttl-match', '600')
+    config.set('netify-fwa', 'mark-base', '0x900000')
+    config.set('netify-fwa', 'mark-mask', '0xf00000')
 
     config.add_section('firewalld')
     config.set('firewalld', 'zones-external', 'public')
@@ -79,7 +81,7 @@ def one_key_exists(data, name, keys):
             break
 
     if not key_found:
-        syslog(LOG_ERR, "Malformed %s, at least one key required: \"%s\"." %(name, key.join(', ')))
+        syslog(LOG_ERR, "Malformed %s, at least one key required: \"%s\"." %(name, ', '.join(keys)))
         return False
 
     return True
@@ -92,7 +94,7 @@ def all_keys_exists(data, name, keys):
             break
 
     if not keys_found:
-        syslog(LOG_ERR, "Malformed %s, all keys required: \"%s\"." %(name, key.join(', ')))
+        syslog(LOG_ERR, "Malformed %s, all keys required: \"%s\"." %(name, ', '.join(keys)))
         return False
 
     return True

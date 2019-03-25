@@ -24,19 +24,29 @@ def nfa_ipset_list():
     sets = []
 
     result = subprocess.run(
-        ["ipset", "-L", "-n"],
+        ["ipset", "list", "-n"],
             stdout=subprocess.PIPE, universal_newlines=True
         )
     if result.returncode == 0:
         if len(result.stdout):
             _sets = result.stdout.split()
             for s in _sets:
-                if s.startswith('NFA_'):
+                if s.startswith('NFA4_') or s.startswith('NFA6_'):
                     sets.append(s)
     else:
-        syslog(LOG_ERR, "IPSet error: %s" %(result))
+        syslog(LOG_ERR, "ipset error: %s" %(result))
 
     return sets
+
+def nfa_ipset_destroy(name):
+    params = ["ipset", "destroy", name]
+    result = subprocess.run(params,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+    if result.returncode != 0:
+        return False
+
+    return True
 
 class nfa_ipset():
     """IPSet support for Netify FWA"""
@@ -46,14 +56,28 @@ class nfa_ipset():
     ipv = "inet"
     timeout = 0
 
-    def __init__(self, name, timeout=0, ipv=4, type="hash:ip,port,ip"):
-        self.name = name
+    def __init__(self, name, ipv=4, timeout=0, type="hash:ip,port,ip"):
+        self.set_name(name, ipv)
         self.type = type
         if ipv == 4:
             self.ipv = "inet"
         elif ipv == 6:
             self.ipv = "inet6"
         self.timeout = timeout
+
+    def set_name(self, name, ipv):
+        maxlen = 31
+        name = name.strip().upper()
+
+        if ipv == 4:
+            prefix = 'NFA4_'
+        else:
+            prefix = 'NFA6_'
+
+        if not name.startswith(prefix):
+            self.name = prefix + name[0:(maxlen - len(prefix))]
+        else:
+            self.name = name[0:maxlen]
 
     def create(self):
         params = ["ipset", "create", self.name, self.type, "family", self.ipv]
@@ -69,17 +93,10 @@ class nfa_ipset():
         return True
 
     def destroy(self):
-        params = ["ipset", "destroy", self.name]
-        result = subprocess.run(params,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
-        if result.returncode != 0:
-            return False
+        return nfa_ipset_destroy(self.name)
 
-        return True
-
-    def upsert(self, other_ip, ip_protocol, other_port, local_ip):
-        entry = "%s,%d:%d,%s" %(other_ip, ip_protocol, other_port, local_ip)
+    def upsert(self, other_ip, other_port, local_ip):
+        entry = "%s,%d,%s" %(other_ip, other_port, local_ip)
         params = ["ipset", "-exist", "add", self.name, entry]
         result = subprocess.run(params,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
