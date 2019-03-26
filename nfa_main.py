@@ -301,9 +301,21 @@ def nfa_fw_sync():
                 directions.update({'egress': 'dst,dst,src'})
 
             for direction, ipset_param in directions.items():
+
+                params = '-m set --match-set %s %s' %(ipset.name, ipset_param)
+
+                if 'weekdays' in rule or 'time-start' in rule:
+                    params = '%s -m time' %(params)
+                    if 'weekdays' in rule:
+                        params = '%s --weekdays %s' %(params, rule['weekdays'])
+                    if 'time-start' in rule:
+                        params = '%s --timestart %s' %(params, rule['time-start'])
+                    if 'time-stop' in rule:
+                        params = '%s --timestop %s' %(params, rule['time-stop'])
+
                 __nfa_fw.add_rule('mangle', 'NFA_%s' %(direction),
-                    '-m set --match-set %s %s -j MARK --set-mark 0x%x'
-                    %(ipset.name, ipset_param, mark_base), ipv)
+                    '%s -j MARK --set-mark 0x%x' %(params, mark_base), ipv)
+
                 mark_base += 1
 
     for name in ipsets_existing:

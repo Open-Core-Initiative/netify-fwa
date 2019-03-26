@@ -153,10 +153,6 @@ def load_dynamic(path):
             syslog(LOG_ERR,
                 "Malformed %s, required key not found: \"%s\"." %(name, 'time-stop'))
             return None
-        elif 'time-stop' in rule and 'time-start' not in rule:
-            syslog(LOG_ERR,
-                "Malformed %s, required key not found: \"%s\"." %(name, 'time-start'))
-            return None
 
     valid_whitelist_types = [ 'mac', 'ipv4', 'ipv6' ]
 
