@@ -22,6 +22,7 @@ import socket
 import errno
 import time
 import os.path
+import re
 
 from getopt import getopt, GetoptError
 
@@ -57,6 +58,8 @@ __nfa_config_dynamic = None
 __nfa_config_cat_cache = None
 
 __nfa_log_options = LOG_PID | LOG_PERROR
+
+__nfa_rx_app_id = None
 
 def nfa_signal_handler(signum, frame):
     global __nfa_config_reload, __nfa_should_terminate
@@ -335,14 +338,19 @@ def nfa_flow_matches_rule(flow, rule):
         return False
 
     if 'protocol_category' in rule:
-        if flow['detected_protocol'] not in __nfa_config_cat_cache['protocols']:
+        key = str(flow['detected_protocol'])
+        if key not in __nfa_config_cat_cache['protocols']:
             return False
-        if __nfa_config_cat_cache['protocols'][flow['detected_protocol']] != rule['protocol_category']:
+        if __nfa_config_cat_cache['protocols'][key] != rule['protocol_category']:
             return False
     if 'application_category' in rule:
-        if flow['detected_application'] not in __nfa_config_cat_cache['applications']:
+        match = __nfa_rx_app_id.match(flow['detected_application_name'])
+        if match is None: return False
+
+        key = match.group()
+        if key not in __nfa_config_cat_cache['applications']:
             return False
-        if __nfa_config_cat_cache['applications'][flow['detected_application']] != rule['application_category']:
+        if __nfa_config_cat_cache['applications'][key] != rule['application_category']:
             return False
 
     return True
@@ -375,6 +383,7 @@ def nfa_create_daemon():
     return True
 
 def nfa_main():
+    global __nfa_rx_app_id
     global __nfa_config_reload
     global __nfa_config, __nfa_config_dynamic, __nfa_config_cat_cache
 
@@ -384,6 +393,8 @@ def nfa_main():
     nd = nfa_netifyd.netifyd()
 
     task_cat_cache_update = None
+
+    __nfa_rx_app_id = re.compile('\d+')
 
     config_cat_cache = __nfa_config.get('netify-api', 'path-category-cache')
     ttl_cat_cache = __nfa_config.get('netify-api', 'ttl-category-cache')
