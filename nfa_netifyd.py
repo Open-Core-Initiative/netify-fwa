@@ -118,7 +118,7 @@ class netifyd:
                 "%s: Malformed JSON structure: expected type" %(self.uri))
             return None
 
-        syslog(LOG_DEBUG, "%s: Type: %s" %(self.uri, jd['type']))
+        #syslog(LOG_DEBUG, "%s: Type: %s" %(self.uri, jd['type']))
 
         if jd['type'] == 'agent_hello':
             self.agent_version = jd['build_version']
