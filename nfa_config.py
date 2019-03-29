@@ -104,6 +104,10 @@ def load_json(path):
     try:
         with open(path, 'r') as fd:
             config = json.load(fd)
+    except json.decoder.JSONDecodeError as e:
+        syslog(LOG_WARNING,
+            "Configuration file is invalid: %s on line: %d, column: %d: %s"
+            %(e.msg, e.lineno, e.colno, path))
     except FileNotFoundError as e:
         syslog(LOG_WARNING, "Configuration file not found: %s" %(path))
 
@@ -120,7 +124,7 @@ def load_dynamic(path):
     if not key_exists(config, name, 'version'):
         return None
 
-    if config['version'] > NFA_JSON_CONFIG_VERSION:
+    if float(config['version']) > NFA_JSON_CONFIG_VERSION:
         syslog(LOG_ERR, "Unsupported %s version: %.02f" %(name, config['version']))
         return None
 

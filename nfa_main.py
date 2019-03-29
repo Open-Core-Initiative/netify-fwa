@@ -324,7 +324,7 @@ def nfa_fw_sync():
         nfa_ipset.nfa_ipset_destroy(name)
 
     __nfa_ipsets = nfa_ipset.nfa_ipset_list()
-    syslog(LOG_DEBUG, "ipset new: %s" %(__nfa_ipsets))
+    #syslog(LOG_DEBUG, "ipset new: %s" %(__nfa_ipsets))
 
     for rule in __nfa_config_dynamic['whitelist']:
         if rule['type'] == 'mac':
