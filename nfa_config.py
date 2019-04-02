@@ -30,10 +30,11 @@ def load_main(path):
 
     config.add_section('netify-fwa')
     config.set('netify-fwa', 'firewall-engine', 'firewalld')
-    config.set('netify-fwa', 'path-config-dynamic', '/etc/netify-fwa/netify-fwa.json')
-    config.set('netify-fwa', 'ttl-match', '600')
     config.set('netify-fwa', 'mark-base', '0x900000')
     config.set('netify-fwa', 'mark-mask', '0xf00000')
+    config.set('netify-fwa', 'path-config-dynamic', '/etc/netify-fwa/netify-fwa.json')
+    config.set('netify-fwa', 'path-status', '/var/run/netify-fwa/status.json')
+    config.set('netify-fwa', 'ttl-match', '600')
 
     config.add_section('firewalld')
     config.set('firewalld', 'zones-external', 'public')

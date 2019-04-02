@@ -61,6 +61,8 @@ __nfa_log_options = LOG_PID | LOG_PERROR
 
 __nfa_rx_app_id = None
 
+__nfa_stats = { 'flows': 0, 'blocked': 0, 'prioritized': 0 }
+
 def nfa_signal_handler(signum, frame):
     global __nfa_config_reload, __nfa_should_terminate
 
@@ -125,7 +127,6 @@ def nfa_cat_cache_reload(config_cat_cache, task_cat_update):
 
         if not task_cat_update.exit_success:
             syslog(LOG_DEBUG, "Failed to update category cache.")
-            os.remove(config_cat_cache)
         else:
             cat_cache = nfa_config.load_cat_cache(config_cat_cache)
 
@@ -368,6 +369,9 @@ def nfa_flow_matches_rule(flow, rule):
     return True
 
 def nfa_process_flow(flow):
+    if __nfa_config_dynamic is None:
+        return
+
     for rule in __nfa_config_dynamic['rules']:
         if rule['type'] != 'block': continue
         if not nfa_flow_matches_rule(flow['flow'], rule): continue
@@ -378,6 +382,25 @@ def nfa_process_flow(flow):
             flow['flow']['other_ip'], flow['flow']['other_port'], \
             flow['flow']['local_ip']):
             syslog(LOG_WARNING, "Error upserting ipset with flow match.")
+        else:
+            __nfa_stats['blocked'] += 1
+
+def nfa_process_agent_status(status):
+    global __nfa_stats
+
+    if 'flows' in status and 'flows_prev' in status:
+        __nfa_stats['flows'] = status['flows']
+
+    status = __nfa_config.get('netify-fwa', 'path-status')
+
+    try:
+        with open(status, 'w') as fh:
+            json.dump(__nfa_stats, fh)
+    except:
+        syslog(LOG_ERR, "Unable to update status file: %s" %(status))
+
+    __nfa_stats['blocked'] = 0
+    __nfa_stats['prioritized'] = 0
 
 def nfa_create_daemon():
     try:
@@ -457,6 +480,9 @@ def nfa_main():
                     jd['flow']['detected_protocol'] == 8: continue
 
                 nfa_process_flow(jd)
+
+            if jd['type'] == 'agent_status':
+                nfa_process_agent_status(jd)
 
     nd.close()
     nfa_fw_cleanup()
