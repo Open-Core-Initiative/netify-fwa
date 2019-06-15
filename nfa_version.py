@@ -15,10 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Netify FWA application version
-NFA_VERSION = '1.0.4'
+NFA_VERSION = '1.0.5'
 
 # Highest Netify FWA Dynamic JSON configuration we understand
 NFA_JSON_CONFIG_VERSION = 1.0
 
 # Highest Netify Socket JSON version we understand
-NETIFY_JSON_VERSION = 1.8
+NETIFY_JSON_VERSION = 1.9
