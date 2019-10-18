@@ -142,22 +142,22 @@ def nfa_rule_criteria(rule):
     criteria = []
     if 'protocol' in rule:
         criteria.append(str(rule['protocol']))
-    else
+    else:
         criteria.append(str(0))
 
     if 'protocol_category' in rule:
         criteria.append(str(rule['protocol_category']))
-    else
+    else:
         criteria.append(str(0))
 
     if 'application' in rule:
         criteria.append(str(rule['application']))
-    else
+    else:
         criteria.append(str(0))
 
     if 'application_category' in rule:
         criteria.append(str(rule['application_category']))
-    else
+    else:
         criteria.append(str(0))
 
     return '_'.join(criteria)
