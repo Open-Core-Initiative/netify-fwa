@@ -25,7 +25,7 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
-netifyd_json_version = 1.8
+from nfa_version import NETIFY_JSON_VERSION
 
 class netifyd:
     sd = None
@@ -126,7 +126,7 @@ class netifyd:
 
             syslog("%s: %s" %(self.uri, self.agent_version))
 
-            if self.json_version > netifyd_json_version:
+            if self.json_version > NETIFY_JSON_VERSION:
                 syslog(LOG_ERR, "%s: Unsupported JSON version." %(self.uri))
                 sys.exit(1)
 

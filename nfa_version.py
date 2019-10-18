@@ -21,4 +21,4 @@ NFA_VERSION = '1.0.5'
 NFA_JSON_CONFIG_VERSION = 1.0
 
 # Highest Netify Socket JSON version we understand
-NETIFY_JSON_VERSION = 1.9
+NETIFY_JSON_VERSION = 1.90
