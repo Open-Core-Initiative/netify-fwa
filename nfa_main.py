@@ -356,9 +356,14 @@ def nfa_fw_sync():
                 '%s %s -j ACCEPT' %(direction, rule['address']), ipv)
 
 def nfa_flow_matches_rule(flow, rule):
+    app_id = 0
+    app_match = __nfa_rx_app_id.match(flow['detected_application_name'])
+    if app_match is not None:
+        app_id = app_match.group()
+
     if 'protocol' in rule and flow['detected_protocol'] != rule['protocol']:
         return False
-    if 'application' in rule and flow['detected_application'] != rule['application']:
+    if 'application' in rule and app_id != rule['application']:
         return False
 
     if 'protocol_category' in rule:
@@ -368,13 +373,9 @@ def nfa_flow_matches_rule(flow, rule):
         if __nfa_config_cat_cache['protocols'][key] != rule['protocol_category']:
             return False
     if 'application_category' in rule:
-        match = __nfa_rx_app_id.match(flow['detected_application_name'])
-        if match is None: return False
-
-        key = match.group()
-        if key not in __nfa_config_cat_cache['applications']:
+        if app_id not in __nfa_config_cat_cache['applications']:
             return False
-        if __nfa_config_cat_cache['applications'][key] != rule['application_category']:
+        if __nfa_config_cat_cache['applications'][app_id] != rule['application_category']:
             return False
 
     return True
