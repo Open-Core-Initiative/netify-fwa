@@ -23,10 +23,10 @@ from syslog import \
 import nfa_ipset
 
 class nfa_firewall():
-    """Generic iptables support for Netify FWA"""
+    """ClearOS support for Netify FWA"""
 
     def __init__(self):
-        syslog(LOG_DEBUG, "IPTables Firewall driver initialized.")
+        syslog(LOG_DEBUG, "ClearOS Firewall driver initialized.")
 
     # Status
 
@@ -35,7 +35,9 @@ class nfa_firewall():
             ["iptables", "--version"],
             stdout=subprocess.PIPE, universal_newlines=True
         )
-        return result.stdout
+        version = result.stdout
+        parts = version.split()
+        return "ClearOS Firewall %s" %(parts[1])
 
     def is_running(self):
         return True

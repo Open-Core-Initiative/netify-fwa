@@ -23,7 +23,7 @@ from syslog import \
 
 from nfa_version import NFA_JSON_CONFIG_VERSION
 
-def load_main(path):
+def create_main():
     config = {}
 
     config = configparser.ConfigParser()
@@ -44,6 +44,9 @@ def load_main(path):
     config.set('iptables', 'interfaces-external', 'eth0')
     config.set('iptables', 'interfaces-internal', 'eth1,eth2')
 
+    # TODO: Add ClearOS options
+    #config.add_section('clearos')
+
     config.add_section('netify-agent')
     config.set('netify-agent', 'socket-uri', 'unix:///var/run/netifyd/netifyd.sock')
 
@@ -52,20 +55,28 @@ def load_main(path):
     config.set('netify-api', 'ttl-category-cache', '86400')
     config.set('netify-api', 'url', 'https://api.netify.ai/api/v1')
 
+    return config
+
+def load_main(path):
+    config = create_main()
+
     not_found = False
 
     try:
         with open(path, 'r') as fd:
             config.read_file(fd)
     except FileNotFoundError as e:
-        not_found = True        
+        not_found = True
         syslog(LOG_WARNING, "Configuration file not found: %s" %(path))
 
     if not_found:
-        with open(path, 'w') as fd:
-            config.write(fd)
+        save_main(path, config)
 
     return config
+
+def save_main(path, config):
+    with open(path, 'w') as fd:
+        config.write(fd)
 
 def key_exists(data, name, key):
     if key not in data:

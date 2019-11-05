@@ -1,4 +1,4 @@
-#!/usr/bin/python3 -Es
+#!/usr/bin/env python3
 
 # Netify Firewall Agent
 # Copyright (C) 2019 eGloo Incorporated <http://www.egloo.ca>
@@ -175,6 +175,8 @@ def nfa_fw_init():
         from nfa_iptables import nfa_firewall
     elif fw_engine == 'firewalld':
         from nfa_firewalld import nfa_firewall
+    elif fw_engine == 'clearos':
+        from nfa_clearos import nfa_firewall
     else:
         print("Unsupported firewall engine: %s" %(fw_engine))
         return False
@@ -491,6 +493,8 @@ def nfa_main():
                 if jd['flow']['detected_protocol'] == 5 or \
                     jd['flow']['detected_protocol'] == 8: continue
 
+                #print(jd)
+
                 nfa_process_flow(jd)
 
             if jd['type'] == 'agent_status':
@@ -509,7 +513,7 @@ if __name__ == "__main__":
     nfa_config_load()
 
     try:
-        params, args = getopt(sys.argv[1:], 'd', ('debug','help'))
+        params, args = getopt(sys.argv[1:], 'd', ('debug', 'save-default-config', 'help'))
     except GetoptError as e:
         print("Parameter error: %s" %(e.msg))
         print("Try option --help for usage information.")
@@ -518,6 +522,10 @@ if __name__ == "__main__":
     for option in params:
         if option[0] == '-d' or option[0] == '--debug':
             __nfa_debug = True
+        elif option[0] == '--save-default-config':
+            print("Generating default configuration file: /etc/netify-fwa/netify-fwa.ini")
+            nfa_config.save_main('/etc/netify-fwa/netify-fwa.ini', __nfa_config)
+            sys.exit(0)
         elif option[0] == '--help':
             print("Netify FWA v%s" %(NFA_VERSION))
             sys.exit(0)

@@ -29,6 +29,7 @@ class nfa_firewall(client.FirewallClient):
     """Firewalld support for Netify FWA"""
 
     def __init__(self):
+        syslog(LOG_DEBUG, "Firewalld driver initialized.")
         super().__init__()
 
     def ip_version(self, ipv):
