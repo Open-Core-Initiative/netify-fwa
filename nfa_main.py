@@ -23,6 +23,7 @@ import errno
 import time
 import os.path
 import re
+import select
 
 from getopt import getopt, GetoptError
 
@@ -32,6 +33,9 @@ from signal import \
 from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
+
+from inotify_simple import \
+    INotify, flags
 
 import nfa_config
 import nfa_daemonize
@@ -102,8 +106,7 @@ def nfa_config_reload():
             __nfa_config_dynamic = config
             syslog("Loaded dynamic configuration.")
 
-        if __nfa_config_dynamic is not None:
-            __nfa_config_reload = False
+        __nfa_config_reload = False
 
 def nfa_cat_cache_refresh(config_cat_cache, ttl_cat_cache):
     if not os.path.isfile(config_cat_cache) or \
@@ -451,11 +454,27 @@ def nfa_main():
     if os.path.isfile(config_cat_cache):
         __nfa_config_cat_cache = nfa_config.load_cat_cache(config_cat_cache)
 
+    inotify = INotify()
+    config_dynamic = __nfa_config.get('netify-fwa', 'path-config-dynamic')
+    wd = inotify.add_watch(config_dynamic, flags.CLOSE_WRITE | flags.MOVE_SELF | flags.MODIFY)
+
     while not __nfa_should_terminate:
+
+        fd_read = [ inotify.fd ]
+        fd_write = []
+
+        rd, wr, ex = select.select(fd_read, fd_write, fd_read, 0)
+
+        if len(rd):
+            for event in inotify.read():
+                __nfa_config_reload = True
 
         if __nfa_config_reload:
             nfa_config_reload()
             nfa_fw_sync()
+            if fh is not None:
+                nd.close()
+                fh = None
 
         if task_cat_cache_update is None:
             task_cat_cache_update = nfa_cat_cache_refresh(config_cat_cache, ttl_cat_cache)
