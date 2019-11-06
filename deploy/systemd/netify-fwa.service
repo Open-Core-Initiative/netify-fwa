@@ -1,0 +1,18 @@
+[Unit]
+Description=Netify FWA - Firewall Agent
+Before=network-pre.target
+Wants=network-pre.target
+After=firewalld.service
+
+[Service]
+Type=forking
+PIDFile=/var/run/netify-fwa/netify-fwa.pid
+User=root
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStart=/usr/sbin/netify-fwa
+KillMode=mixed
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

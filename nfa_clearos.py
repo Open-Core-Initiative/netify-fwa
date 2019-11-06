@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 import subprocess
 
 from syslog import \
@@ -27,6 +28,7 @@ class nfa_firewall():
 
     def __init__(self):
         syslog(LOG_DEBUG, "ClearOS Firewall driver initialized.")
+        self.load_clearos_configuration()
 
     # Status
 
@@ -45,14 +47,10 @@ class nfa_firewall():
     # Interfaces
 
     def get_external_interfaces(self, config):
-        ifaces = []
-
-        return ifaces
+        return self.interfaces['external']
 
     def get_internal_interfaces(self, config):
-        ifaces = []
-
-        return ifaces
+        return self.interfaces['internal']
 
     # Chains
 
@@ -90,3 +88,23 @@ class nfa_firewall():
 
     def test(self):
         pass
+
+    # Private
+
+    def load_clearos_configuration(self):
+        self.interfaces = { "internal": [], "external": [] }
+
+        rx_kv = re.compile('^(\w+)\s*=\s*["]*([\w\s]+)["]*$')
+
+        path = "/etc/clearos/network.conf"
+        with open(path, 'r') as fd:
+            for i, line in enumerate(fd):
+                match = rx_kv.match(line)
+                if match is not None:
+                    if match.group(1) == "EXTIF":
+                        for value in match.group(2).split():
+                            self.interfaces['external'].append(value)
+                    elif match.group(1) == "LANIF":
+                        for value in match.group(2).split():
+                            self.interfaces['internal'].append(value)
+
