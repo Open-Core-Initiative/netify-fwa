@@ -175,16 +175,17 @@ def nfa_fw_init():
         return False
 
     if fw_engine == 'iptables':
-        from nfa_iptables import nfa_firewall
+        from nfa_fw_iptables import nfa_fw_iptables
+        __nfa_fw = nfa_fw_iptables()
     elif fw_engine == 'firewalld':
-        from nfa_firewalld import nfa_firewall
+        from nfa_fw_firewalld import nfa_fw_firewalld
+        __nfa_fw = nfa_fw_firewalld()
     elif fw_engine == 'clearos':
-        from nfa_clearos import nfa_firewall
+        from nfa_fw_clearos import nfa_fw_clearos
+        __nfa_fw = nfa_fw_clearos()
     else:
         print("Unsupported firewall engine: %s" %(fw_engine))
         return False
-
-    __nfa_fw = nfa_firewall()
 
     if fw_engine == 'firewalld':
         # XXX: Have to open syslog again because the firewalld client code

@@ -23,10 +23,13 @@ from syslog import \
 
 import nfa_ipset
 
-class nfa_firewall():
+from nfa_fw_iptables import nfa_fw_iptables
+
+class nfa_fw_clearos(nfa_fw_iptables):
     """ClearOS support for Netify FWA"""
 
     def __init__(self):
+        super(nfa_fw_clearos, self).__init__()
         syslog(LOG_DEBUG, "ClearOS Firewall driver initialized.")
         self.load_clearos_configuration()
 
@@ -42,7 +45,17 @@ class nfa_firewall():
         return "ClearOS Firewall %s" %(parts[1])
 
     def is_running(self):
-        return True
+        result = subprocess.run(
+            ["systemctl", "--property=ActiveState", "show", "firewall"],
+            stdout=subprocess.PIPE, universal_newlines=True
+        )
+        rx_kv = re.compile('^ActiveState\s*=\s*(.*)$')
+
+        match = rx_kv.match(result.stdout)
+        if match is not None:
+            if match.group(1) == "active":
+                return True
+        return False
 
     # Interfaces
 

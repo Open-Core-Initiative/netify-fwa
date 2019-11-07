@@ -22,20 +22,24 @@ from syslog import \
 
 import nfa_ipset
 
-class nfa_firewall():
-    """Generic iptables support for Netify FWA"""
+from nfa_fw_bpf import nfa_fw_bpf
+
+class nfa_fw_pfsense(nfa_fw_bpf):
+    """Generic pfSense support for Netify FWA"""
 
     def __init__(self):
-        syslog(LOG_DEBUG, "IPTables Firewall driver initialized.")
+        super(nfa_fw_bpf, self).__init__()
+        syslog(LOG_DEBUG, "pfSense Firewall driver initialized.")
 
     # Status
 
     def get_version(self):
-        result = subprocess.run(
-            ["iptables", "--version"],
-            stdout=subprocess.PIPE, universal_newlines=True
-        )
-        return result.stdout
+        return "pfSense"
+#        result = subprocess.run(
+#            ["iptables", "--version"],
+#            stdout=subprocess.PIPE, universal_newlines=True
+#        )
+#        return result.stdout
 
     def is_running(self):
         return True

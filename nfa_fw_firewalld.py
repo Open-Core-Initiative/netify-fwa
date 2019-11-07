@@ -25,12 +25,14 @@ from syslog import \
 
 import nfa_ipset
 
-class nfa_firewall(client.FirewallClient):
+import nfa_fw_iptables
+
+class nfa_fw_firewalld(nfa_fw_iptables, client.FirewallClient):
     """Firewalld support for Netify FWA"""
 
     def __init__(self):
+        super(nfa_fw_firewalld, self).__init__()
         syslog(LOG_DEBUG, "Firewalld driver initialized.")
-        super().__init__()
 
     def ip_version(self, ipv):
         if ipv == 6:
