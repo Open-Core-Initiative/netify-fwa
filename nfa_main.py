@@ -190,6 +190,7 @@ def nfa_fw_init():
         return False
 
     if __nfa_fw.flavor == 'iptables':
+        global nfa_ipset
         import nfa_ipset
 
     if fw_engine == 'firewalld':
