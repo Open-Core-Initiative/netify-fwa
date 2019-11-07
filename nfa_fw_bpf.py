@@ -22,7 +22,7 @@ from syslog import \
 
 import nfa_ipset
 
-class nfa_firewall_bpf():
+class nfa_fw_bpf():
     """Generic BPF support for Netify FWA"""
 
     def __init__(self):

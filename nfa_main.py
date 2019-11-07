@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.6
 
 # Netify Firewall Agent
 # Copyright (C) 2019 eGloo Incorporated <http://www.egloo.ca>
@@ -34,14 +34,10 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
-from inotify_simple import \
-    INotify, flags
-
 import nfa_config
 import nfa_daemonize
 import nfa_netifyd
 import nfa_task
-import nfa_ipset
 
 from nfa_version import NFA_VERSION
 
@@ -183,9 +179,18 @@ def nfa_fw_init():
     elif fw_engine == 'clearos':
         from nfa_fw_clearos import nfa_fw_clearos
         __nfa_fw = nfa_fw_clearos()
+    elif fw_engine == 'bpf':
+        from nfa_fw_bpf import nfa_fw_bpf
+        __nfa_fw = nfa_fw_bpf()
+    elif fw_engine == 'pfsense':
+        from nfa_fw_pfsense import nfa_fw_pfsense
+        __nfa_fw = nfa_fw_pfsense()
     else:
         print("Unsupported firewall engine: %s" %(fw_engine))
         return False
+
+    if __nfa_fw.flavor == 'iptables':
+        import nfa_ipset
 
     if fw_engine == 'firewalld':
         # XXX: Have to open syslog again because the firewalld client code
@@ -245,6 +250,8 @@ def nfa_fw_init():
     return True
 
 def nfa_fw_cleanup():
+    global __nfa_fw
+
     mark_base = int(__nfa_config.get('netify-fwa', 'mark-base'), 16)
     mark_mask = int(__nfa_config.get('netify-fwa', 'mark-mask'), 16)
 
@@ -274,10 +281,12 @@ def nfa_fw_cleanup():
         __nfa_fw.flush_chain('mangle', 'NFA_block', ipv)
         __nfa_fw.delete_chain('mangle', 'NFA_block', ipv)
 
-    for name in nfa_ipset.nfa_ipset_list():
-        nfa_ipset.nfa_ipset_destroy(name)
+    if __nfa_fw.flavor == 'iptables':
+        for name in nfa_ipset.nfa_ipset_list():
+            nfa_ipset.nfa_ipset_destroy(name)
 
 def nfa_fw_sync():
+    global __nfa_fw
     global __nfa_ipsets
 
     if __nfa_config_dynamic is None:
@@ -291,58 +300,59 @@ def nfa_fw_sync():
     ttl_match = int(__nfa_config.get('netify-fwa', 'ttl-match'))
     mark_base = int(__nfa_config.get('netify-fwa', 'mark-base'), 16)
 
-    ipsets_new = []
-    ipsets_created = []
-    ipsets_existing = nfa_ipset.nfa_ipset_list()
+    if __nfa_fw.flavor == 'iptables':
+        ipsets_new = []
+        ipsets_created = []
+        ipsets_existing = nfa_ipset.nfa_ipset_list()
 
-    for rule in __nfa_config_dynamic['rules']:
-        if rule['type'] != 'block': continue
+        for rule in __nfa_config_dynamic['rules']:
+            if rule['type'] != 'block': continue
 
-        name = nfa_rule_criteria(rule)
+            name = nfa_rule_criteria(rule)
 
-        for ipv in [4, 6]:
-            ipset = nfa_ipset.nfa_ipset(name, ipv, ttl_match)
-            ipsets_new.append(ipset.name)
+            for ipv in [4, 6]:
+                ipset = nfa_ipset.nfa_ipset(name, ipv, ttl_match)
+                ipsets_new.append(ipset.name)
 
-            if ipset.name not in ipsets_existing and ipset.name not in ipsets_created:
-                if ipset.create():
-                    ipsets_created.append(ipset.name)
-                else:
-                    syslog(LOG_WARNING, "Error creating ipset: %s" %(ipset.name))
-                    continue
+                if ipset.name not in ipsets_existing and ipset.name not in ipsets_created:
+                    if ipset.create():
+                        ipsets_created.append(ipset.name)
+                    else:
+                        syslog(LOG_WARNING, "Error creating ipset: %s" %(ipset.name))
+                        continue
 
-            directions = {}
+                directions = {}
 
-            if 'direction' not in rule or rule['direction'] == 'ingress':
-                directions.update({'ingress': 'src,src,dst'})
-            if 'direction' not in rule or rule['direction'] == 'egress':
-                directions.update({'egress': 'dst,dst,src'})
+                if 'direction' not in rule or rule['direction'] == 'ingress':
+                    directions.update({'ingress': 'src,src,dst'})
+                if 'direction' not in rule or rule['direction'] == 'egress':
+                    directions.update({'egress': 'dst,dst,src'})
 
-            for direction, ipset_param in directions.items():
+                for direction, ipset_param in directions.items():
 
-                params = '-m set --match-set %s %s' %(ipset.name, ipset_param)
+                    params = '-m set --match-set %s %s' %(ipset.name, ipset_param)
 
-                if 'weekdays' in rule or 'time-start' in rule:
-                    params = '%s -m time' %(params)
-                    if 'weekdays' in rule:
-                        params = '%s --weekdays %s' %(params, rule['weekdays'])
-                    if 'time-start' in rule:
-                        params = '%s --timestart %s' %(params, rule['time-start'])
-                    if 'time-stop' in rule:
-                        params = '%s --timestop %s' %(params, rule['time-stop'])
+                    if 'weekdays' in rule or 'time-start' in rule:
+                        params = '%s -m time' %(params)
+                        if 'weekdays' in rule:
+                            params = '%s --weekdays %s' %(params, rule['weekdays'])
+                        if 'time-start' in rule:
+                            params = '%s --timestart %s' %(params, rule['time-start'])
+                        if 'time-stop' in rule:
+                            params = '%s --timestop %s' %(params, rule['time-stop'])
 
-                __nfa_fw.add_rule('mangle', 'NFA_%s' %(direction),
-                    '%s -j MARK --set-mark 0x%x' %(params, mark_base), ipv)
+                    __nfa_fw.add_rule('mangle', 'NFA_%s' %(direction),
+                        '%s -j MARK --set-mark 0x%x' %(params, mark_base), ipv)
 
-                mark_base += 1
+                    mark_base += 1
 
-    for name in ipsets_existing:
-        if name in ipsets_new: continue
-        syslog(LOG_DEBUG, "ipset destroy: %s" %(name))
-        nfa_ipset.nfa_ipset_destroy(name)
+        for name in ipsets_existing:
+            if name in ipsets_new: continue
+            syslog(LOG_DEBUG, "ipset destroy: %s" %(name))
+            nfa_ipset.nfa_ipset_destroy(name)
 
-    __nfa_ipsets = nfa_ipset.nfa_ipset_list()
-    #syslog(LOG_DEBUG, "ipset new: %s" %(__nfa_ipsets))
+        __nfa_ipsets = nfa_ipset.nfa_ipset_list()
+        #syslog(LOG_DEBUG, "ipset new: %s" %(__nfa_ipsets))
 
     for rule in __nfa_config_dynamic['whitelist']:
         if rule['type'] == 'mac':
@@ -387,6 +397,8 @@ def nfa_flow_matches_rule(flow, rule):
     return True
 
 def nfa_process_flow(flow):
+    global __nfa_fw
+
     if __nfa_config_dynamic is None:
         return
 
@@ -395,13 +407,15 @@ def nfa_process_flow(flow):
         if not nfa_flow_matches_rule(flow['flow'], rule): continue
 
         name = nfa_rule_criteria(rule)
-        ipset = nfa_ipset.nfa_ipset(name, flow['flow']['ip_version'])
-        if not ipset.upsert( \
-            flow['flow']['other_ip'], flow['flow']['other_port'], \
-            flow['flow']['local_ip']):
-            syslog(LOG_WARNING, "Error upserting ipset with flow match.")
-        else:
-            __nfa_stats['blocked'] += 1
+
+        if __nfa_fw.flavor == 'iptables':
+            ipset = nfa_ipset.nfa_ipset(name, flow['flow']['ip_version'])
+            if not ipset.upsert( \
+                flow['flow']['other_ip'], flow['flow']['other_port'], \
+                flow['flow']['local_ip']):
+                syslog(LOG_WARNING, "Error upserting ipset with flow match.")
+            else:
+                __nfa_stats['blocked'] += 1
 
 def nfa_process_agent_status(status):
     global __nfa_stats
@@ -436,6 +450,7 @@ def nfa_create_daemon():
     return True
 
 def nfa_main():
+    global __nfa_fw
     global __nfa_rx_app_id
     global __nfa_config_reload
     global __nfa_config, __nfa_config_dynamic, __nfa_config_cat_cache
@@ -455,20 +470,25 @@ def nfa_main():
     if os.path.isfile(config_cat_cache):
         __nfa_config_cat_cache = nfa_config.load_cat_cache(config_cat_cache)
 
-    inotify = INotify()
-    config_dynamic = __nfa_config.get('netify-fwa', 'path-config-dynamic')
-    wd = inotify.add_watch(config_dynamic, flags.CLOSE_WRITE | flags.MOVE_SELF | flags.MODIFY)
+    wd = None
+    if __nfa_fw.flavor == 'iptables':
+        from inotify_simple import INotify, flags
+
+        inotify = INotify()
+        config_dynamic = __nfa_config.get('netify-fwa', 'path-config-dynamic')
+        wd = inotify.add_watch(config_dynamic, flags.CLOSE_WRITE | flags.MOVE_SELF | flags.MODIFY)
 
     while not __nfa_should_terminate:
 
-        fd_read = [ inotify.fd ]
-        fd_write = []
+        if wd is not None:
+            fd_read = [ inotify.fd ]
+            fd_write = []
 
-        rd, wr, ex = select.select(fd_read, fd_write, fd_read, 0)
+            rd, wr, ex = select.select(fd_read, fd_write, fd_read, 0)
 
-        if len(rd):
-            for event in inotify.read():
-                __nfa_config_reload = True
+            if len(rd):
+                for event in inotify.read():
+                    __nfa_config_reload = True
 
         if __nfa_config_reload:
             nfa_config_reload()
