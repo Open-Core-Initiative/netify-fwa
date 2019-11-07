@@ -22,17 +22,17 @@ from syslog import \
 
 import nfa_ipset
 
-class nfa_fw_bpf():
-    """Generic BPF support for Netify FWA"""
+class nfa_fw_pf():
+    """Generic PF support for Netify FWA"""
 
     def __init__(self):
-        self.flavor = 'bpf'
-        syslog(LOG_DEBUG, "BPF Firewall driver initialized.")
+        self.flavor = 'pf'
+        syslog(LOG_DEBUG, "PF Firewall driver initialized.")
 
     # Status
 
     def get_version(self):
-        return "BPF"
+        return "pf"
 #        result = subprocess.run(
 #            ["iptables", "--version"],
 #            stdout=subprocess.PIPE, universal_newlines=True

@@ -179,9 +179,9 @@ def nfa_fw_init():
     elif fw_engine == 'clearos':
         from nfa_fw_clearos import nfa_fw_clearos
         __nfa_fw = nfa_fw_clearos()
-    elif fw_engine == 'bpf':
-        from nfa_fw_bpf import nfa_fw_bpf
-        __nfa_fw = nfa_fw_bpf()
+    elif fw_engine == 'pf':
+        from nfa_fw_pf import nfa_fw_pf
+        __nfa_fw = nfa_fw_pf()
     elif fw_engine == 'pfsense':
         from nfa_fw_pfsense import nfa_fw_pfsense
         __nfa_fw = nfa_fw_pfsense()

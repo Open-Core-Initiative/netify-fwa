@@ -22,13 +22,13 @@ from syslog import \
 
 import nfa_ipset
 
-from nfa_fw_bpf import nfa_fw_bpf
+from nfa_fw_pf import nfa_fw_pf
 
-class nfa_fw_pfsense(nfa_fw_bpf):
-    """Generic pfSense support for Netify FWA"""
+class nfa_fw_pfsense(nfa_fw_pf):
+    """pfSense support for Netify FWA"""
 
     def __init__(self):
-        super(nfa_fw_bpf, self).__init__()
+        super(nfa_fw_pf, self).__init__()
         syslog(LOG_DEBUG, "pfSense Firewall driver initialized.")
 
     # Status
