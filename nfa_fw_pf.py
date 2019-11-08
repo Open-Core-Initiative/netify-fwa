@@ -20,8 +20,6 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
-import nfa_ipset
-
 class nfa_fw_pf():
     """Generic PF support for Netify FWA"""
 

@@ -39,6 +39,8 @@ import nfa_daemonize
 import nfa_netifyd
 import nfa_task
 
+from nfa_defaults import NFA_CONF
+
 from nfa_version import NFA_VERSION
 
 __nfa_debug = False
@@ -87,7 +89,7 @@ def nfa_signal_handler(signum, frame):
 def nfa_config_load():
     global __nfa_config
 
-    __nfa_config = nfa_config.load_main('/etc/netify-fwa/netify-fwa.ini')
+    __nfa_config = nfa_config.load_main(NFA_CONF)
 
 def nfa_config_reload():
     global __nfa_config_reload
@@ -564,8 +566,8 @@ if __name__ == "__main__":
         if option[0] == '-d' or option[0] == '--debug':
             __nfa_debug = True
         elif option[0] == '--save-default-config':
-            print("Generating default configuration file: /etc/netify-fwa/netify-fwa.ini")
-            nfa_config.save_main('/etc/netify-fwa/netify-fwa.ini', __nfa_config)
+            print("Generating default configuration file: %s" %(NFA_CONF))
+            nfa_config.save_main(NFA_CONF, __nfa_config)
             sys.exit(0)
         elif option[0] == '--help':
             print("Netify FWA v%s" %(NFA_VERSION))

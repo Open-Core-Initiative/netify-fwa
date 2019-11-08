@@ -21,6 +21,10 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
+from nfa_defaults import \
+        NFA_CONF_DYNAMIC, NFA_PATH_STATUS, NFA_PATH_CATEGORIES, NFA_URI_SOCKET, \
+        NFA_URI_API, NFA_TTL_MATCH, NFA_TTL_CATEGORY_CACHE
+
 from nfa_version import NFA_JSON_CONFIG_VERSION
 
 def create_main():
@@ -32,9 +36,9 @@ def create_main():
     config.set('netify-fwa', 'firewall-engine', 'firewalld')
     config.set('netify-fwa', 'mark-base', '0x900000')
     config.set('netify-fwa', 'mark-mask', '0xf00000')
-    config.set('netify-fwa', 'path-config-dynamic', '/etc/netify-fwa/netify-fwa.json')
-    config.set('netify-fwa', 'path-status', '/var/run/netify-fwa/status.json')
-    config.set('netify-fwa', 'ttl-match', '600')
+    config.set('netify-fwa', 'path-config-dynamic', NFA_CONF_DYNAMIC)
+    config.set('netify-fwa', 'path-status', NFA_PATH_STATUS)
+    config.set('netify-fwa', 'ttl-match', '%d' %(NFA_TTL_MATCH))
 
     config.add_section('firewalld')
     config.set('firewalld', 'zones-external', 'public')
@@ -48,12 +52,12 @@ def create_main():
     #config.add_section('clearos')
 
     config.add_section('netify-agent')
-    config.set('netify-agent', 'socket-uri', 'unix:///var/run/netifyd/netifyd.sock')
+    config.set('netify-agent', 'socket-uri', NFA_URI_SOCKET)
 
     config.add_section('netify-api')
-    config.set('netify-api', 'path-category-cache', '/etc/netify-fwa/netify-categories.json')
-    config.set('netify-api', 'ttl-category-cache', '86400')
-    config.set('netify-api', 'url', 'https://api.netify.ai/api/v1')
+    config.set('netify-api', 'path-category-cache', NFA_PATH_CATEGORIES)
+    config.set('netify-api', 'ttl-category-cache', '%d' %(NFA_TTL_CATEGORY_CACHE))
+    config.set('netify-api', 'url', NFA_URI_API)
 
     return config
 

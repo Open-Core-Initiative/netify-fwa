@@ -15,12 +15,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
+import xml.etree.ElementTree as et
 
 from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
-
-import nfa_ipset
 
 from nfa_fw_pf import nfa_fw_pf
 
@@ -28,8 +27,9 @@ class nfa_fw_pfsense(nfa_fw_pf):
     """pfSense support for Netify FWA"""
 
     def __init__(self):
-        super(nfa_fw_pf, self).__init__()
+        super(nfa_fw_pfsense, self).__init__()
         syslog(LOG_DEBUG, "pfSense Firewall driver initialized.")
+        self.load_pfsense_configuration()
 
     # Status
 
@@ -47,14 +47,10 @@ class nfa_fw_pfsense(nfa_fw_pf):
     # Interfaces
 
     def get_external_interfaces(self, config):
-        ifaces = []
-
-        return ifaces
+        return self.interfaces['external']
 
     def get_internal_interfaces(self, config):
-        ifaces = []
-
-        return ifaces
+        return self.interfaces['internal']
 
     # Chains
 
@@ -92,3 +88,22 @@ class nfa_fw_pfsense(nfa_fw_pf):
 
     def test(self):
         pass
+
+    # Private
+
+    def load_pfsense_configuration(self):
+        self.interfaces = { "internal": [], "external": [] }
+        tree = et.parse('/conf.default/config.xml')
+        root = tree.getroot()
+        ifaces = root.find('interfaces')
+
+        for iface in ifaces.findall('wan'):
+            if iface.find('enable') is not None:
+                name = iface.find('if')
+                self.interfaces['external'].append(name)
+
+        for iface in ifaces.findall('lan'):
+            if iface.find('enable') is not None:
+                name = iface.find('if')
+                self.interfaces['internal'].append(name)
+
