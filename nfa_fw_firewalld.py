@@ -30,8 +30,8 @@ import nfa_fw_iptables
 class nfa_fw_firewalld(nfa_fw_iptables, client.FirewallClient):
     """Firewalld support for Netify FWA"""
 
-    def __init__(self):
-        super(nfa_fw_firewalld, self).__init__()
+    def __init__(self, nfa_config):
+        super(nfa_fw_firewalld, self).__init__(nfa_config)
         syslog(LOG_DEBUG, "Firewalld driver initialized.")
 
     def ip_version(self, ipv):
@@ -66,18 +66,18 @@ class nfa_fw_firewalld(nfa_fw_iptables, client.FirewallClient):
 
     # Interfaces
 
-    def get_external_interfaces(self, config):
+    def get_external_interfaces(self):
         ifaces = []
-        zones = config.get('firewalld', 'zones-external').split(',')
+        zones = self.nfa_config.get('firewalld', 'zones-external').split(',')
 
         for zone in zones:
             ifaces.extend(self.get_zone_interfaces(zone.strip()))
 
         return ifaces
 
-    def get_internal_interfaces(self, config):
+    def get_internal_interfaces(self):
         ifaces = []
-        zones = config.get('firewalld', 'zones-internal').split(',')
+        zones = self.nfa_config.get('firewalld', 'zones-internal').split(',')
 
         for zone in zones:
             ifaces.extend(self.get_zone_interfaces(zone.strip()))

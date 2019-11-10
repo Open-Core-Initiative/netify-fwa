@@ -26,8 +26,8 @@ from nfa_fw_pf import nfa_fw_pf
 class nfa_fw_pfsense(nfa_fw_pf):
     """pfSense support for Netify FWA"""
 
-    def __init__(self):
-        super(nfa_fw_pfsense, self).__init__()
+    def __init__(self, nfa_config):
+        super(nfa_fw_pfsense, self).__init__(nfa_config)
         syslog(LOG_DEBUG, "pfSense Firewall driver initialized.")
         self.load_pfsense_configuration()
 
@@ -46,10 +46,10 @@ class nfa_fw_pfsense(nfa_fw_pf):
 
     # Interfaces
 
-    def get_external_interfaces(self, config):
+    def get_external_interfaces(self):
         return self.interfaces['external']
 
-    def get_internal_interfaces(self, config):
+    def get_internal_interfaces(self):
         return self.interfaces['internal']
 
     # Chains
@@ -93,7 +93,7 @@ class nfa_fw_pfsense(nfa_fw_pf):
 
     def load_pfsense_configuration(self):
         self.interfaces = { "internal": [], "external": [] }
-        tree = et.parse('/conf.default/config.xml')
+        tree = et.parse('/cf/conf/config.xml')
         root = tree.getroot()
         ifaces = root.find('interfaces')
 

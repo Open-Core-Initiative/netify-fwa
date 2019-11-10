@@ -23,8 +23,9 @@ from syslog import \
 class nfa_fw_pf():
     """Generic PF support for Netify FWA"""
 
-    def __init__(self):
+    def __init__(self, nfa_config):
         self.flavor = 'pf'
+        self.nfa_config = nfa_config
         syslog(LOG_DEBUG, "PF Firewall driver initialized.")
 
     # Status
@@ -42,12 +43,12 @@ class nfa_fw_pf():
 
     # Interfaces
 
-    def get_external_interfaces(self, config):
+    def get_external_interfaces(self):
         ifaces = []
 
         return ifaces
 
-    def get_internal_interfaces(self, config):
+    def get_internal_interfaces(self):
         ifaces = []
 
         return ifaces

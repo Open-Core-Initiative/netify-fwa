@@ -164,7 +164,7 @@ def nfa_rule_criteria(rule):
     return '_'.join(criteria)
 
 def nfa_fw_init():
-    global __nfa_fw, __nfa_fw_interfaces
+    global __nfa_fw, __nfa_config, __nfa_fw_interfaces
 
     try:
         fw_engine = __nfa_config.get('netify-fwa', 'firewall-engine')
@@ -174,19 +174,19 @@ def nfa_fw_init():
 
     if fw_engine == 'iptables':
         from nfa_fw_iptables import nfa_fw_iptables
-        __nfa_fw = nfa_fw_iptables()
+        __nfa_fw = nfa_fw_iptables(__nfa_config)
     elif fw_engine == 'firewalld':
         from nfa_fw_firewalld import nfa_fw_firewalld
-        __nfa_fw = nfa_fw_firewalld()
+        __nfa_fw = nfa_fw_firewalld(__nfa_config)
     elif fw_engine == 'clearos':
         from nfa_fw_clearos import nfa_fw_clearos
-        __nfa_fw = nfa_fw_clearos()
+        __nfa_fw = nfa_fw_clearos(__nfa_config)
     elif fw_engine == 'pf':
         from nfa_fw_pf import nfa_fw_pf
-        __nfa_fw = nfa_fw_pf()
+        __nfa_fw = nfa_fw_pf(__nfa_config)
     elif fw_engine == 'pfsense':
         from nfa_fw_pfsense import nfa_fw_pfsense
-        __nfa_fw = nfa_fw_pfsense()
+        __nfa_fw = nfa_fw_pfsense(__nfa_config)
     else:
         print("Unsupported firewall engine: %s" %(fw_engine))
         return False
@@ -208,10 +208,10 @@ def nfa_fw_init():
 
     # Get interfaces by role
     __nfa_fw_interfaces['external'].extend(
-        __nfa_fw.get_external_interfaces(__nfa_config)
+        __nfa_fw.get_external_interfaces()
     )
     __nfa_fw_interfaces['internal'].extend(
-        __nfa_fw.get_internal_interfaces(__nfa_config)
+        __nfa_fw.get_internal_interfaces()
     )
 
     if len(__nfa_fw_interfaces['external']) == 0 and \

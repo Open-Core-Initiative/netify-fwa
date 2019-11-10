@@ -25,8 +25,9 @@ import nfa_ipset
 class nfa_fw_iptables():
     """Generic iptables support for Netify FWA"""
 
-    def __init__(self):
+    def __init__(self, nfa_config):
         self.flavor = 'iptables'
+        self.nfa_config = nfa_config
         syslog(LOG_DEBUG, "IPTables Firewall driver initialized.")
         super(nfa_fw_iptables, self).__init__()
 
@@ -44,12 +45,12 @@ class nfa_fw_iptables():
 
     # Interfaces
 
-    def get_external_interfaces(self, config):
+    def get_external_interfaces(self):
         ifaces = []
 
         return ifaces
 
-    def get_internal_interfaces(self, config):
+    def get_internal_interfaces(self):
         ifaces = []
 
         return ifaces

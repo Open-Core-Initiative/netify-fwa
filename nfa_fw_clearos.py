@@ -28,8 +28,8 @@ from nfa_fw_iptables import nfa_fw_iptables
 class nfa_fw_clearos(nfa_fw_iptables):
     """ClearOS support for Netify FWA"""
 
-    def __init__(self):
-        super(nfa_fw_clearos, self).__init__()
+    def __init__(self, nfa_config):
+        super(nfa_fw_clearos, self).__init__(nfa_config)
         syslog(LOG_DEBUG, "ClearOS Firewall driver initialized.")
         self.load_clearos_configuration()
 
@@ -59,10 +59,10 @@ class nfa_fw_clearos(nfa_fw_iptables):
 
     # Interfaces
 
-    def get_external_interfaces(self, config):
+    def get_external_interfaces(self):
         return self.interfaces['external']
 
-    def get_internal_interfaces(self, config):
+    def get_internal_interfaces(self):
         return self.interfaces['internal']
 
     # Chains
