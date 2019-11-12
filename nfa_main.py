@@ -104,7 +104,7 @@ def nfa_config_reload():
             __nfa_config_dynamic = config
             syslog("Loaded dynamic configuration.")
 
-        __nfa_config_reload = False
+    __nfa_config_reload = False
 
 def nfa_cat_cache_refresh(config_cat_cache, ttl_cat_cache):
     if not os.path.isfile(config_cat_cache) or \
