@@ -11,6 +11,7 @@ BUILT_SOURCES = $(TEMPLATEFILES)
 CLEANFILES = $(TEMPLATEFILES)
 
 EXTRA_DIST = \
+	LICENSE \
 	autogen.sh \
 	inotify_simple.py \
 	inotify_test.py \
@@ -43,4 +44,14 @@ EXTRA_DIST = \
 
 install-data-hook:
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(sharedatadir)
-	$(INSTALL) -D -m 0644 *.py $(DESTDIR)$(sharedatadir)/
+	$(INSTALL) -m 0644 *.py $(DESTDIR)$(sharedatadir)/
+
+deploy-pfsense:
+	./autogen.sh && ./configure
+	$(MAKE) -C deploy
+	$(MAKE) dist-gzip
+	sudo cp -v $(PACKAGE)-$(VERSION).tar.gz /usr/ports/distfiles/
+	make -C deploy/pfsense clean
+	make -C deploy/pfsense makesum
+	make -C deploy/pfsense package DISABLE_VULNERABILITIES=yes
+	ls -lh deploy/pfsense/work/pkg/*.txz

@@ -30,4 +30,5 @@ EXTRA_DIST = $(TEMPLATEFILES_IN) \
 		< "$<" > "$@"
 
 install-exec-hook:
-	$(INSTALL) -D -m 0755 $(PACKAGE).sh $(DESTDIR)$(sbindir)/$(PACKAGE)
+	$(INSTALL) -d -m 0755 $(DESTDIR)$(sbindir)
+	$(INSTALL) -m 0755 $(PACKAGE).sh $(DESTDIR)$(sbindir)/$(PACKAGE)

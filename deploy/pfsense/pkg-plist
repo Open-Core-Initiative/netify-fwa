@@ -1,8 +1,18 @@
-%%DATADIR%%/info.xml
-@dir /etc/inc
-@dir /etc/inc/priv
-pkg/netify.xml
-pkg/netify/netify.inc
-pkg/netify/netify_defs.inc
-www/netify/netify_status.php
-www/netify/netify_provision.php
+sbin/netify-fwa
+share/netify-fwa/inotify_simple.py
+share/netify-fwa/inotify_test.py
+share/netify-fwa/nfa_config.py
+share/netify-fwa/nfa_daemonize.py
+share/netify-fwa/nfa_defaults.py
+share/netify-fwa/nfa_fw_clearos.py
+share/netify-fwa/nfa_fw_firewalld.py
+share/netify-fwa/nfa_fw_iptables.py
+share/netify-fwa/nfa_fw_pf.py
+share/netify-fwa/nfa_fw_pfsense.py
+share/netify-fwa/nfa_ipset.py
+share/netify-fwa/nfa_main.py
+share/netify-fwa/nfa_netify_api.py
+share/netify-fwa/nfa_netifyd.py
+share/netify-fwa/nfa_rule.py
+share/netify-fwa/nfa_task.py
+share/netify-fwa/nfa_version.py
