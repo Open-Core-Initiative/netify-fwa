@@ -7,6 +7,9 @@ TEMPLATEFILES_IN = nfa_defaults.py.in nfa_version.py.in
 
 sharedatadir = $(datadir)/$(PACKAGE_TARNAME)
 
+install-data-hook:
+	$(INSTALL) -D -m 0644 *.py $(DESTDIR)$(sharedatadir)/
+
 BUILT_SOURCES = $(TEMPLATEFILES)
 CLEANFILES = $(TEMPLATEFILES)
 
