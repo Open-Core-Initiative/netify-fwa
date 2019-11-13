@@ -2,40 +2,27 @@
 
 # $FreeBSD$
 #
-# PROVIDE: netifyd
+# PROVIDE: netify-fwa
 # REQUIRE: LOGIN
 # KEYWORD: shutdown
 #
 # Add these lines to /etc/rc.conf.local or /etc/rc.conf
 # to enable this service:
 #
-# netifyd_enable (bool):	Set to NO by default.
-#							Set it to YES to enable netifyd.
+# netify_fwa_enable (bool):	Set to NO by default.
+#				Set it to YES to enable netify-fwa.
 
 . /etc/rc.subr
 
-name="%%PACKAGE_TARNAME%%"
-rcvar="${name}_enable"
+name="netify_fwa"
+rcvar="netify_fwa_enable"
 
-command="%%PREFIX%%/sbin/${name}"
+procname="/usr/local/bin/python3.6"
+command="%%PREFIX%%/sbin/netify-fwa"
+pidfile="/var/run/netify-fwa/netify-fwa.pid"
 
-start_precmd="${name}_prestart"
+load_rc_config netify_fwa
 
-netifyd_prestart()
-{
-    if [ -f /etc/version ]; then
-        # pfSense detected, enable auto-detect:
-        export NETIFYD_AUTODETECT="yes"
-    fi
-    . %%DATADIR%%/functions.sh
-    netifyd_opts=$(auto_detect_options)
-    rc_flags="${netifyd_opts} ${rc_flags}"
-
-    return 0
-}
-
-load_rc_config $name
-
-: ${netifyd_enable:=no}
+: ${netify_fwa_enable:=no}
 
 run_rc_command "$1"

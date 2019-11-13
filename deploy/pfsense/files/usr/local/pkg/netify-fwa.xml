@@ -39,7 +39,7 @@
 	<service>
 		<name>netify-fwa</name>
 		<rcfile>netify-fwa.sh</rcfile>
-		<executable>netify-fwa</executable>
+		<executable>python3.6</executable>
 		<description>Netify FWA Daemon</description>
 	</service>
 	<tabs>

@@ -21,11 +21,11 @@ require_once("service-utils.inc");
 require_once("/usr/local/pkg/netify-fwa/netify-fwa_defs.inc");
 
 function netify_fwa_create_rc() {
-	$rcfile['file'] = 'netifyd-fwa.sh';
+	$rcfile['file'] = 'netify-fwa.sh';
 	$rcfile['start'] = 'mkdir -p ' .
 		NETIFY_FWA_VOLATILE_STATEDIR . "\n\t" .
 		NETIFY_FWA_PREFIX . "etc/rc.d/netify-fwa onestart\n\t";
-	$rcfile['stop'] = NETIFY_PREFIX . "etc/rc.d/netify-fwa stop\n\t";
+	$rcfile['stop'] = NETIFY_FWA_PREFIX . "etc/rc.d/netify-fwa onestop\n\t";
 	write_rcfile($rcfile);
 }
 

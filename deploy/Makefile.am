@@ -11,6 +11,7 @@ BUILT_SOURCES = $(TEMPLATEFILES)
 CLEANFILES = $(TEMPLATEFILES)
 
 EXTRA_DIST = $(TEMPLATEFILES_IN) \
+	netify-fwa.json \
 	pfsense/files \
 	pfsense/Makefile.in \
 	pfsense/pkg-descr \
@@ -32,3 +33,7 @@ EXTRA_DIST = $(TEMPLATEFILES_IN) \
 install-exec-hook:
 	$(INSTALL) -d -m 0755 $(DESTDIR)$(sbindir)
 	$(INSTALL) -m 0755 $(PACKAGE).sh $(DESTDIR)$(sbindir)/$(PACKAGE)
+
+install-data-hook:
+	$(INSTALL) -d -m 0750 $(DESTDIR)$(persistentstatedir)
+	$(INSTALL) -m 0640 $(PACKAGE).json $(DESTDIR)$(persistentstatedir)

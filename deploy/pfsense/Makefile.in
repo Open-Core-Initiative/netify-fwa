@@ -18,19 +18,19 @@ USE_RC_SUBR=netify-fwa
 GNU_CONFIGURE=1
 
 SUB_FILES=pkg-install pkg-deinstall
-SUB_LIST=PORTNAME=${PORTNAME}
+SUB_LIST=PORTNAME=${PORTNAME} PACKAGE_TARNAME=@PACKAGE_TARNAME@
 
 post-install:
 	${MKDIR} ${STAGEDIR}${DATADIR}
-	${MKDIR} ${STAGEDIR}${PREFIX}/etc/netify-fwa
+	${MKDIR} -m 0750 ${STAGEDIR}${PREFIX}/etc/netify-fwa
 	${MKDIR} ${STAGEDIR}${PREFIX}/pkg/netify-fwa
 	${MKDIR} ${STAGEDIR}${PREFIX}/www/netify-fwa
 
 	${INSTALL_DATA} ${FILESDIR}${DATADIR}/info.xml \
 		${STAGEDIR}${DATADIR}
-	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/pkg/netify-fwa.xml \
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/netify-fwa.xml \
 		${STAGEDIR}${PREFIX}/pkg
-	${INSTALL_DATA} ${FILESDIR}${PREFIX}/etc/netify-fwa/netify-fwa.ini \
+	${INSTALL_DATA} -m 0640 ${FILESDIR}${PREFIX}/etc/netify-fwa/netify-fwa.ini \
 		${STAGEDIR}${PREFIX}/etc/netify-fwa/netify-fwa.ini.sample
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/netify-fwa/netify-fwa.inc \
 		${STAGEDIR}${PREFIX}/pkg/netify-fwa
@@ -38,5 +38,8 @@ post-install:
 		${STAGEDIR}${PREFIX}/pkg/netify-fwa
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/netify-fwa/netify-fwa_status.php \
 		${STAGEDIR}${PREFIX}/www/netify-fwa
+
+	${MV} ${STAGEDIR}${PREFIX}/etc/netify-fwa/netify-fwa.json \
+		${STAGEDIR}${PREFIX}/etc/netify-fwa/netify-fwa.json.sample
 
 .include <bsd.port.mk>
