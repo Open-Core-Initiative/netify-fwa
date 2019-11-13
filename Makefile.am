@@ -5,7 +5,7 @@ SUBDIRS=deploy
 TEMPLATEFILES = nfa_defaults.py nfa_version.py
 TEMPLATEFILES_IN = nfa_defaults.py.in nfa_version.py.in
 
-sharedatadir = $(datadir)/netifyd
+sharedatadir = $(datadir)/$(PACKAGE_TARNAME)
 
 BUILT_SOURCES = $(TEMPLATEFILES)
 CLEANFILES = $(TEMPLATEFILES)

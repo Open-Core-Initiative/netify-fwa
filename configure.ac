@@ -29,6 +29,6 @@ AC_SUBST([persistentstatedir], [$sysconfdir/netify-fwa])
 AC_SUBST([volatilestatedir], [$localstatedir/run/$PACKAGE_TARNAME])
 
 AC_CONFIG_FILES([Makefile deploy/Makefile deploy/rpm/netify-fwa.spec \
-    deploy/systemd/netify-fwa.service deploy/systemd/netify-fwa.tmpf])
+    deploy/systemd/Makefile])
 
 AC_OUTPUT

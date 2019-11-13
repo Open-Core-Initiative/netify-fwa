@@ -3,6 +3,8 @@ AUTOMAKE_OPTIONS = foreign
 TEMPLATEFILES = netify-fwa.service netify-fwa.tmpf
 TEMPLATEFILES_IN = netify-fwa.service.in netify-fwa.tmpf.in
 
+sharedatadir = $(datadir)/$(PACKAGE_TARNAME)
+
 BUILT_SOURCES = $(TEMPLATEFILES)
 CLEANFILES = $(TEMPLATEFILES)
 
