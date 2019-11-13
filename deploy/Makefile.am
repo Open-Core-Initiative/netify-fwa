@@ -23,3 +23,6 @@ EXTRA_DIST = $(TEMPLATEFILES_IN)
 		-e 's|[@]persistentstatedir@|$(persistentstatedir)|g' \
 		-e 's|[@]volatilestatedir@|$(volatilestatedir)|g' \
 		< "$<" > "$@"
+
+install-exec-hook:
+	$(INSTALL) -D -m 0755 $(PACKAGE).sh $(DESTDIR)$(sbindir)/$(PACKAGE)
