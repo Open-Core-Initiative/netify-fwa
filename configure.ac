@@ -21,6 +21,9 @@ AC_INIT([Netify FWA], [1.2.0],
 AM_INIT_AUTOMAKE([1.9 tar-pax])
 AC_CONFIG_SRCDIR([nfa_main.py])
 
+# Checks for programs.
+AC_PROG_SED
+
 # Convience substitutions
 AC_SUBST([persistentstatedir], [$sysconfdir/netify-fwa])
 AC_SUBST([volatilestatedir], [$localstatedir/run/$PACKAGE_TARNAME])

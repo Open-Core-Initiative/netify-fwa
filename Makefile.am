@@ -37,5 +37,6 @@ EXTRA_DIST = \
 		-e 's|[@]PACKAGE_TARNAME@|$(PACKAGE_TARNAME)|g' \
 		-e 's|[@]PACKAGE_VERSION@|$(PACKAGE_VERSION)|g' \
 		-e 's|[@]sysconfdir@|$(sysconfdir)|g' \
+		-e 's|[@]persistentstatedir@|$(persistentstatedir)|g' \
 		-e 's|[@]volatilestatedir@|$(volatilestatedir)|g' \
 		< "$<" > "$@"
