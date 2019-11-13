@@ -1,0 +1,16 @@
+#!/bin/sh
+
+[ -x /opt/rh/rh-python36/enable ] && . /opt/rh/rh-python36/enable
+
+PYTHON="$(which python3)"
+
+if [ -z "$PYTHON" ]; then
+    PYTHON="$(which python3.6)"
+fi
+
+if [ -z "$PYTHON" ]; then
+    echo "Unable to locate Python3 interpreter."
+    exit 1
+fi
+
+exec env $PYTHON -Es /usr/local/share/netify-fwa/nfa_main.py $@

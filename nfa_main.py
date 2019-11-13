@@ -1,5 +1,3 @@
-#!/usr/bin/env python3.6
-
 # Netify Firewall Agent
 # Copyright (C) 2019 eGloo Incorporated <http://www.egloo.ca>
 #
