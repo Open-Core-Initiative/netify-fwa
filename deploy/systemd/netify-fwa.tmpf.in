@@ -1,1 +1,1 @@
-d    /var/run/netify-fwa    0755    root    root    -
+d    @volatilestatedir@    0755    root    root    -

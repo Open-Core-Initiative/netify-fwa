@@ -6,10 +6,10 @@ After=firewalld.service
 
 [Service]
 Type=forking
-PIDFile=/var/run/netify-fwa/netify-fwa.pid
+PIDFile=@volatilestatedir@/netify-fwa.pid
 User=root
 ExecReload=/bin/kill -HUP $MAINPID
-ExecStart=/usr/sbin/netify-fwa
+ExecStart=@sbindir@/netify-fwa
 KillMode=mixed
 Restart=on-failure
 RestartSec=3

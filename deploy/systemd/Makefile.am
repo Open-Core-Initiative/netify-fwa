@@ -1,9 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS=systemd
-
-TEMPLATEFILES = netify-fwa.sh.in
-TEMPLATEFILES_IN = netify-fwa.sh.in
+TEMPLATEFILES = netify-fwa.service netify-fwa.tmpf
+TEMPLATEFILES_IN = netify-fwa.service.in netify-fwa.tmpf.in
 
 BUILT_SOURCES = $(TEMPLATEFILES)
 CLEANFILES = $(TEMPLATEFILES)
