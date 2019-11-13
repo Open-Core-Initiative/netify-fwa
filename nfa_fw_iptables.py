@@ -21,15 +21,23 @@ from syslog import \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
 import nfa_ipset
+import nfa_rule
 
 class nfa_fw_iptables():
     """Generic iptables support for Netify FWA"""
 
     def __init__(self, nfa_config):
+    self.ipsets = None
         self.flavor = 'iptables'
         self.nfa_config = nfa_config
+        self.mark_base = int(nfa_config.get('netify-fwa', 'mark-base'), 16)
+        self.mark_mask = int(nfa_config.get('netify-fwa', 'mark-mask'), 16)
+
         syslog(LOG_DEBUG, "IPTables Firewall driver initialized.")
-        super(nfa_fw_iptables, self).__init__()
+
+    def __del__(self):
+        for name in nfa_ipset.nfa_ipset_list():
+            nfa_ipset.nfa_ipset_destroy(name)
 
     # Status
 
@@ -86,6 +94,181 @@ class nfa_fw_iptables():
 
     def delete_rule(self, table, chain, args, ipv=4, priority=0):
         pass
+
+    # Install hooks
+
+    def install_hooks(self):
+        ifn_int = this.get_internal_interfaces()
+        ifn_ext = this.get_external_interfaces()
+
+        if len(ifn_int) == 0 and len(ifn_ext) == 0:
+            syslog(LOG_ERR, "No interfaces with roles defined.")
+            return False
+
+        # Create whitelist chain
+        for ipv in [4, 6]:
+            self.add_chain('mangle', 'NFA_whitelist', ipv)
+
+            # Add jumps to whitelist chain
+            self.add_rule('mangle', 'FORWARD', '-j NFA_whitelist', ipv)
+
+            # Create ingress/egress chains
+            self.add_chain('mangle', 'NFA_ingress', ipv)
+            self.add_chain('mangle', 'NFA_egress', ipv)
+
+            # Add jumps to ingress/egress chains
+            for iface in self_interfaces['external']:
+                self.add_rule('mangle', 'FORWARD',
+                    '-i %s -j NFA_ingress' %(iface), ipv)
+            for iface in self_interfaces['internal']:
+                self.add_rule('mangle', 'FORWARD',
+                    '-i %s -j NFA_egress' %(iface), ipv)
+
+            # Create block chain
+            self.add_chain('mangle', 'NFA_block', ipv)
+
+            self.add_rule('mangle', 'NFA_block', '-j DROP', ipv)
+
+            # Add jumps to block chain
+            self.add_rule('mangle', 'FORWARD',
+                '-m mark --mark 0x%08x/0x%08x -j NFA_block' %(
+                    self.mark_base, self.mark_mask
+                ), ipv)
+
+        return True
+
+    # Remove hooks
+
+    def remove_hooks(self):
+        for ipv in [4, 6]:
+            self.delete_rule('mangle', 'FORWARD', '-j NFA_whitelist', ipv)
+
+            for iface in self_interfaces['external']:
+                self.delete_rule('mangle', 'FORWARD',
+                    '-i %s -j NFA_ingress' %(iface), ipv)
+            for iface in self_interfaces['internal']:
+                self.delete_rule('mangle', 'FORWARD',
+                    '-i %s -j NFA_egress' %(iface), ipv)
+
+            self.flush_chain('mangle', 'NFA_whitelist', ipv)
+            self.delete_chain('mangle', 'NFA_whitelist', ipv)
+
+            self.flush_chain('mangle', 'NFA_ingress', ipv)
+            self.delete_chain('mangle', 'NFA_ingress', ipv)
+
+            self.flush_chain('mangle', 'NFA_egress', ipv)
+            self.delete_chain('mangle', 'NFA_egress', ipv)
+
+
+            self.delete_rule('mangle', 'FORWARD',
+                '-m mark --mark 0x%08x/0x%08x -j NFA_block' %(
+                    self.mark_base, self.mark_mask
+                ), ipv)
+
+            self.flush_chain('mangle', 'NFA_block', ipv)
+            self.delete_chain('mangle', 'NFA_block', ipv)
+
+    # Synchronize state
+
+    def sync(self, config_dynamic):
+        if (config_dynamic is None):
+            return
+
+        for ipv in [4, 6]:
+            self.flush_chain('mangle', 'NFA_whitelist', ipv)
+            self.flush_chain('mangle', 'NFA_ingress', ipv)
+            self.flush_chain('mangle', 'NFA_egress', ipv)
+
+        ttl_match = int(self.nfa_config.get('netify-fwa', 'ttl-match'))
+        mark_base = int(self.nfa_config.get('netify-fwa', 'mark-base'), 16)
+
+        ipsets_new = []
+        ipsets_created = []
+        ipsets_existing = nfa_ipset.nfa_ipset_list()
+
+        for rule in config_dynamic['rules']:
+            if rule['type'] != 'block': continue
+
+            name = nfa_rule.criteria(rule)
+
+            for ipv in [4, 6]:
+                ipset = nfa_ipset.nfa_ipset(name, ipv, ttl_match)
+                ipsets_new.append(ipset.name)
+
+                if ipset.name not in ipsets_existing and ipset.name not in ipsets_created:
+                    if ipset.create():
+                        ipsets_created.append(ipset.name)
+                    else:
+                        syslog(LOG_WARNING, "Error creating ipset: %s" %(ipset.name))
+                        continue
+
+                directions = {}
+
+                if 'direction' not in rule or rule['direction'] == 'ingress':
+                    directions.update({'ingress': 'src,src,dst'})
+                if 'direction' not in rule or rule['direction'] == 'egress':
+                    directions.update({'egress': 'dst,dst,src'})
+
+                for direction, ipset_param in directions.items():
+
+                    params = '-m set --match-set %s %s' %(ipset.name, ipset_param)
+
+                    if 'weekdays' in rule or 'time-start' in rule:
+                        params = '%s -m time' %(params)
+                        if 'weekdays' in rule:
+                            params = '%s --weekdays %s' %(params, rule['weekdays'])
+                        if 'time-start' in rule:
+                            params = '%s --timestart %s' %(params, rule['time-start'])
+                        if 'time-stop' in rule:
+                            params = '%s --timestop %s' %(params, rule['time-stop'])
+
+                    self.add_rule('mangle', 'NFA_%s' %(direction),
+                        '%s -j MARK --set-mark 0x%x' %(params, mark_base), ipv)
+
+                    mark_base += 1
+
+            for name in ipsets_existing:
+                if name in ipsets_new: continue
+                syslog(LOG_DEBUG, "ipset destroy: %s" %(name))
+                nfa_ipset.nfa_ipset_destroy(name)
+
+            __nfa_ipsets = nfa_ipset.nfa_ipset_list()
+            #syslog(LOG_DEBUG, "ipset new: %s" %(__nfa_ipsets))
+
+        for rule in config_dynamic['whitelist']:
+            if rule['type'] == 'mac':
+                # TODO: iptables mac module only supports --mac-source
+                continue
+
+            ipv = 0
+            if rule['type'] == 'ipv4':
+                ipv = 4
+            if rule['type'] == 'ipv6':
+                ipv = 6
+
+            directions = ['-s', '-d']
+
+            for direction in directions:
+                self.add_rule('mangle', 'NFA_whitelist',
+                    '%s %s -j ACCEPT' %(direction, rule['address']), ipv)
+
+    def process_flow(self, flow, config_dynamic, nfa_stats):
+        if config_dynamic is None:
+            return
+
+        for rule in config_dynamic['rules']:
+            if rule['type'] != 'block': continue
+            if not nfa_rule.flow_matches(flow['flow'], rule): continue
+
+            name = nfa_rule.criteria(rule)
+
+            ipset = nfa_ipset.nfa_ipset(name, flow['flow']['ip_version'])
+            if not ipset.upsert( \
+                flow['flow']['other_ip'], flow['flow']['other_port'], \
+                flow['flow']['local_ip']):
+                syslog(LOG_WARNING, "Error upserting ipset with flow match.")
+            else:
+                nfa_stats['blocked'] += 1
 
     # Test
 

@@ -26,7 +26,7 @@ def nfa_ipset_list():
     result = subprocess.run(
         ["ipset", "list", "-n"],
             stdout=subprocess.PIPE, universal_newlines=True
-        )
+    )
     if result.returncode == 0:
         if len(result.stdout):
             _sets = result.stdout.split()

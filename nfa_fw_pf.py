@@ -85,7 +85,50 @@ class nfa_fw_pf():
     def delete_rule(self, table, chain, args, ipv=4, priority=0):
         pass
 
+    # PF Table List
+
+    def table_list(self):
+        tables = []
+
+        result = subprocess.run(
+            ['pfctl', '-s', 'Tables'],
+                stdout=subprocess.PIPE, universal_newlines=True
+        )
+        if result.returncode == 0:
+            if len(result.stdout):
+                _tables = result.stdout.split()
+                for s in _tables:
+                    if s.startswith('NFA_'):
+                        tables.append(s)
+        else:
+            syslog(LOG_ERR, "pfctl(Tables) error: %s" %(result))
+
+        return tables
+
+    # Synchronize state
+
+    def sync(self, config_dynamic):
+        pass
+
+    # Process flow
+
+    def process_flow(self, flow, config_dynamic, nfa_stats):
+        pass
+
+    # Install hooks
+
+    def install_hooks(self):
+        pass
+
+    # Remove hooks
+
+    def remove_hooks(self):
+        pass
+
     # Test
 
     def test(self):
-        pass
+        tables = self.table_list()
+
+        for table in tables:
+            syslog(LOG_DEBUG, "table: %s" %(table))
