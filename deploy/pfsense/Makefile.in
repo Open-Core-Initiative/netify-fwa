@@ -19,30 +19,21 @@ GNU_CONFIGURE=1
 SUB_FILES=pkg-install pkg-deinstall
 SUB_LIST=PORTNAME=${PORTNAME}
 
-#do-extract:
-#	${MKDIR} ${WRKSRC}
+post-install:
+	${MKDIR} ${STAGEDIR}${DATADIR}
+	${MKDIR} ${STAGEDIR}${PREFIX}/etc/netify-fwa
+	${MKDIR} ${STAGEDIR}${PREFIX}/pkg/netify-fwa
+	${MKDIR} ${STAGEDIR}${PREFIX}/www/netify-fwa
 
-#do-install:
-#	${MKDIR} ${STAGEDIR}${DATADIR}
-#	${MKDIR} ${STAGEDIR}${DOCSDIR}
-#	${MKDIR} ${STAGEDIR}${PREFIX}/pkg
-#	${MKDIR} ${STAGEDIR}${PREFIX}/pkg/netify
-#	${MKDIR} ${STAGEDIR}${PREFIX}/www/netify
-#	${MKDIR} ${STAGEDIR}/etc/inc/priv
-#
-#	${INSTALL_DATA} -m 0644 ${FILESDIR}/INSTALL-pfSense-2.4.4-p3.md \
-#		${STAGEDIR}${DOCSDIR}
-#	${INSTALL_DATA} ${FILESDIR}${DATADIR}/info.xml \
-#		${STAGEDIR}${DATADIR}
-#	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/pkg/netify.xml \
-#		${STAGEDIR}${PREFIX}/pkg
-#	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/netify/netify.inc \
-#		${STAGEDIR}${PREFIX}/pkg/netify
-#	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/netify/netify_defs.inc \
-#		${STAGEDIR}${PREFIX}/pkg/netify
-#	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/netify/netify_status.php \
-#		${STAGEDIR}${PREFIX}/www/netify
-#	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/netify/netify_provision.php \
-#		${STAGEDIR}${PREFIX}/www/netify
+	${INSTALL_DATA} ${FILESDIR}${DATADIR}/info.xml \
+		${STAGEDIR}${DATADIR}
+	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/pkg/netify-fwa.xml \
+		${STAGEDIR}${PREFIX}/pkg
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/netify-fwa/netify-fwa.inc \
+		${STAGEDIR}${PREFIX}/pkg/netify-fwa
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/netify-fwa/netify-fwa_defs.inc \
+		${STAGEDIR}${PREFIX}/pkg/netify-fwa
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/netify-fwa/netify-fwa_status.php \
+		${STAGEDIR}${PREFIX}/www/netify-fwa
 
 .include <bsd.port.mk>

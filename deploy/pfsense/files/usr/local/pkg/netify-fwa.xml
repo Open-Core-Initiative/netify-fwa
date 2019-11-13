@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE packagegui SYSTEM "../schema/packages.dtd">
+<?xml-stylesheet type="text/xsl" href="../xsl/package.xsl"?>
+<packagegui>
+	<copyright>
+	<![CDATA[
+/*
+ * netify-fwa.xml
+ *
+ * Netify FWA for pfSense
+ * Copyright (C) 2015-2019 eGloo Incorporated
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+]]>
+	</copyright>
+	<name>Netify FWA</name>
+	<description>Netify FWA for pfSense</description>
+	<version>%%PKGVERSION%%</version>
+	<title>Services: Netify FWA</title>
+	<include_file>/usr/local/pkg/netify-fwa/netify-fwa.inc</include_file>
+	<menu>
+		<name>Netify FWA</name>
+		<tooltiptext>Configure and view Netify FWA settings</tooltiptext>
+		<section>Services</section>
+		<url>/netify-fwa/netify-fwa_status.php</url>
+	</menu>
+	<service>
+		<name>netify-fwa</name>
+		<rcfile>netify-fwa.sh</rcfile>
+		<executable>netify-fwa</executable>
+		<description>Netify FWA Daemon</description>
+	</service>
+	<tabs>
+	</tabs>
+	<fields>
+	</fields>
+
+	<filter_rules_needed>
+		netify_fwa_generate_filter_rules
+	</filter_rules_needed>
+
+	<custom_php_resync_config_command>
+		netify_fwa_package_sync();
+	</custom_php_resync_config_command>
+
+	<custom_php_install_command>
+		netify_fwa_package_install();
+	</custom_php_install_command>
+
+	<custom_php_deinstall_command>
+		netify_fwa_package_deinstall();
+	</custom_php_deinstall_command>
+</packagegui>

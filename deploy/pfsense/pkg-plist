@@ -1,3 +1,8 @@
+%%DATADIR%%/info.xml
+@dir %%PREFIX%%/etc/netify-fwa
+pkg/netify-fwa.xml
+pkg/netify-fwa/netify-fwa.inc
+pkg/netify-fwa/netify-fwa_defs.inc
 sbin/netify-fwa
 share/netify-fwa/inotify_simple.py
 share/netify-fwa/inotify_test.py
@@ -16,3 +21,4 @@ share/netify-fwa/nfa_netifyd.py
 share/netify-fwa/nfa_rule.py
 share/netify-fwa/nfa_task.py
 share/netify-fwa/nfa_version.py
+www/netify-fwa/netify-fwa_status.php

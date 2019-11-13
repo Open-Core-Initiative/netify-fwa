@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<pfsensepkgs>
+	<package>
+		<name>netify-fwa</name>
+		<pkginfolink>https://www.netify.ai/resources/documentation/requirements</pkginfolink>
+		<descr><![CDATA[Netify Firewall Agent for pfSense.]]></descr>
+		<website>http://netify.ai/</website>
+		<category>Services</category>
+		<version>%%PKGVERSION%%</version>
+		<status>Beta</status>
+		<configurationfile>netify-fwa.xml</configurationfile>
+		<maintainer>team@egloo.ca</maintainer>
+	</package>
+</pfsensepkgs>
