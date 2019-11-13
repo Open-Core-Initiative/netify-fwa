@@ -21,8 +21,11 @@ AC_INIT([Netify FWA], [1.2.0],
 AM_INIT_AUTOMAKE([1.9 tar-pax])
 AC_CONFIG_SRCDIR([nfa_main.py])
 
+# Convience substitutions
+AC_SUBST([persistentstatedir], [$sysconfdir/netify-fwa])
+AC_SUBST([volatilestatedir], [$localstatedir/run/$PACKAGE_TARNAME])
+
 AC_CONFIG_FILES([Makefile deploy/Makefile deploy/rpm/netify-fwa.spec \
-    deploy/systemd/netify-fwa.service deploy/systemd/netify-fwa.tmpf \
-    nfa_defaults.py nfa_version.py])
+    deploy/systemd/netify-fwa.service deploy/systemd/netify-fwa.tmpf])
 
 AC_OUTPUT

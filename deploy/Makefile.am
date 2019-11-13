@@ -1,3 +1,3 @@
 AUTOMAKE_OPTIONS = foreign
 
-#EXTRA_DIST = rpm
+EXTRA_DIST = netify-fwa.sh.in
