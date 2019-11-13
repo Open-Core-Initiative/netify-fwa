@@ -1,2 +1,12 @@
-__pycache__
+aclocal.m4
+autom4te.cache/
+config.log
+config.status
+configure
+install-sh
+Makefile
+Makefile.in
+missing
 nfa_defaults.py
+nfa_version.py
+__pycache__
