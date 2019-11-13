@@ -1,5 +1,6 @@
 %%DATADIR%%/info.xml
-@dir %%PREFIX%%/etc/netify-fwa
+@dir etc/netify-fwa
+@sample etc/netify-fwa/netify-fwa.ini.sample
 pkg/netify-fwa.xml
 pkg/netify-fwa/netify-fwa.inc
 pkg/netify-fwa/netify-fwa_defs.inc

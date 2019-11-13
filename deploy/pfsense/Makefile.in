@@ -14,6 +14,7 @@ DISTNAME=@PACKAGE_TARNAME@-@PACKAGE_VERSION@
 #RUN_DEPENDS=netifyd>=2.97:security/netifyd
 
 USES=gmake
+USE_RC_SUBR=netify-fwa
 GNU_CONFIGURE=1
 
 SUB_FILES=pkg-install pkg-deinstall
@@ -29,6 +30,8 @@ post-install:
 		${STAGEDIR}${DATADIR}
 	${INSTALL_DATA} -m 0644 ${FILESDIR}${PREFIX}/pkg/netify-fwa.xml \
 		${STAGEDIR}${PREFIX}/pkg
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/etc/netify-fwa/netify-fwa.ini \
+		${STAGEDIR}${PREFIX}/etc/netify-fwa/netify-fwa.ini.sample
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/netify-fwa/netify-fwa.inc \
 		${STAGEDIR}${PREFIX}/pkg/netify-fwa
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/netify-fwa/netify-fwa_defs.inc \
