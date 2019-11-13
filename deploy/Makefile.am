@@ -10,7 +10,12 @@ sharedatadir = $(datadir)/$(PACKAGE_TARNAME)
 BUILT_SOURCES = $(TEMPLATEFILES)
 CLEANFILES = $(TEMPLATEFILES)
 
-EXTRA_DIST = $(TEMPLATEFILES_IN)
+EXTRA_DIST = $(TEMPLATEFILES_IN) \
+	pfsense/files \
+	pfsense/Makefile.in \
+	pfsense/pkg-descr \
+	pfsense/pkg-message \
+	pfsense/pkg-plist
 
 %: %.in
 	$(SED) \
