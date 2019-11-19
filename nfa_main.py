@@ -361,6 +361,9 @@ def nfa_fw_sync():
                 '%s %s -j ACCEPT' %(direction, rule['address']), ipv)
 
 def nfa_flow_matches_rule(flow, rule):
+    global __nfa_rx_app_id
+    global __nfa_config_cat_cache
+
     app_id = 0
     app_match = __nfa_rx_app_id.match(flow['detected_application_name'])
     if app_match is not None:
