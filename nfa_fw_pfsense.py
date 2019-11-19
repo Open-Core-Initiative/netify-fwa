@@ -86,7 +86,7 @@ class nfa_fw_pfsense(nfa_fw_pf):
     # Test
 
     def test(self):
-        pass
+        super().test()
 
     # Private
 

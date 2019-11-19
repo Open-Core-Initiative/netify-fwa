@@ -1,5 +1,7 @@
 import re
 
+from nfa_main import __nfa_config_cat_cache
+
 __nfa_rx_app_id = None
 
 def criteria(rule):
