@@ -34,12 +34,11 @@ class nfa_fw_pfsense(nfa_fw_pf):
     # Status
 
     def get_version(self):
-        return "pfSense"
-#        result = subprocess.run(
-#            ["iptables", "--version"],
-#            stdout=subprocess.PIPE, universal_newlines=True
-#        )
-#        return result.stdout
+        result = subprocess.run(
+            ["cat", "/etc/version"],
+            stdout=subprocess.PIPE, universal_newlines=True
+        )
+        return "pfSense v%s" %(result.stdout)
 
     def is_running(self):
         return True
