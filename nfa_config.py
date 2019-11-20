@@ -82,9 +82,10 @@ def save_main(path, config):
     with open(path, 'w') as fd:
         config.write(fd)
 
-def key_exists(data, name, key):
+def key_exists(data, name, key, required=True):
     if key not in data:
-        syslog(LOG_ERR, "Malformed %s, required key \"%s\" not found." %(name, key))
+        if required:
+            syslog(LOG_ERR, "Malformed %s, required key \"%s\" not found." %(name, key))
         return False
 
     return True
@@ -144,10 +145,10 @@ def load_dynamic(path):
         syslog(LOG_ERR, "Unsupported %s version: %.02f" %(name, config['version']))
         return None
 
-    if not key_exists(config, name, 'rules'):
-        return None
-    if not key_exists(config, name, 'whitelist'):
-        return None
+    if not key_exists(config, name, 'rules', False):
+        config['rules'] = []
+    if not key_exists(config, name, 'whitelist', False):
+        config['whitelist'] = []
 
     valid_rule_types = [ 'block', 'prioritize' ]
 

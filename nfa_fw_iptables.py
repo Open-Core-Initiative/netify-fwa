@@ -28,17 +28,13 @@ class nfa_fw_iptables():
     """Generic iptables support for Netify FWA"""
 
     def __init__(self, nfa_config):
-    self.ipsets = None
+        self.ipsets = None
         self.flavor = 'iptables'
         self.nfa_config = nfa_config
         self.mark_base = int(nfa_config.get('netify-fwa', 'mark-base'), 16)
         self.mark_mask = int(nfa_config.get('netify-fwa', 'mark-mask'), 16)
 
         syslog(LOG_DEBUG, "IPTables Firewall driver initialized.")
-
-    def __del__(self):
-        for name in nfa_ipset.nfa_ipset_list():
-            nfa_ipset.nfa_ipset_destroy(name)
 
     # Status
 
@@ -99,8 +95,8 @@ class nfa_fw_iptables():
     # Install hooks
 
     def install_hooks(self):
-        ifn_int = this.get_internal_interfaces()
-        ifn_ext = this.get_external_interfaces()
+        ifn_int = self.get_internal_interfaces()
+        ifn_ext = self.get_external_interfaces()
 
         if len(ifn_int) == 0 and len(ifn_ext) == 0:
             syslog(LOG_ERR, "No interfaces with roles defined.")
@@ -118,10 +114,10 @@ class nfa_fw_iptables():
             self.add_chain('mangle', 'NFA_egress', ipv)
 
             # Add jumps to ingress/egress chains
-            for iface in self_interfaces['external']:
+            for iface in self.interfaces['external']:
                 self.add_rule('mangle', 'FORWARD',
                     '-i %s -j NFA_ingress' %(iface), ipv)
-            for iface in self_interfaces['internal']:
+            for iface in self.interfaces['internal']:
                 self.add_rule('mangle', 'FORWARD',
                     '-i %s -j NFA_egress' %(iface), ipv)
 
@@ -144,10 +140,10 @@ class nfa_fw_iptables():
         for ipv in [4, 6]:
             self.delete_rule('mangle', 'FORWARD', '-j NFA_whitelist', ipv)
 
-            for iface in self_interfaces['external']:
+            for iface in self.interfaces['external']:
                 self.delete_rule('mangle', 'FORWARD',
                     '-i %s -j NFA_ingress' %(iface), ipv)
-            for iface in self_interfaces['internal']:
+            for iface in self.interfaces['internal']:
                 self.delete_rule('mangle', 'FORWARD',
                     '-i %s -j NFA_egress' %(iface), ipv)
 
@@ -168,6 +164,9 @@ class nfa_fw_iptables():
 
             self.flush_chain('mangle', 'NFA_block', ipv)
             self.delete_chain('mangle', 'NFA_block', ipv)
+
+        for name in nfa_ipset.nfa_ipset_list():
+            nfa_ipset.nfa_ipset_destroy(name)
 
     # Synchronize state
 
