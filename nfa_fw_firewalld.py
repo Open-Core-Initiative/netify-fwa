@@ -23,8 +23,6 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
-import nfa_ipset
-
 import nfa_fw_iptables
 
 class nfa_fw_firewalld(nfa_fw_iptables, client.FirewallClient):

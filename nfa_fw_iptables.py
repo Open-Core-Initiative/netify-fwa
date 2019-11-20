@@ -28,7 +28,6 @@ class nfa_fw_iptables():
     """Generic iptables support for Netify FWA"""
 
     def __init__(self, nfa_config):
-        self.ipsets = None
         self.flavor = 'iptables'
         self.nfa_config = nfa_config
         self.mark_base = int(nfa_config.get('netify-fwa', 'mark-base'), 16)
@@ -231,9 +230,6 @@ class nfa_fw_iptables():
                 if name in ipsets_new: continue
                 syslog(LOG_DEBUG, "ipset destroy: %s" %(name))
                 nfa_ipset.nfa_ipset_destroy(name)
-
-            #ipsets = nfa_ipset.nfa_ipset_list()
-            #syslog(LOG_DEBUG, "ipset new: %s" %(ipsets))
 
         for rule in config_dynamic['whitelist']:
             if rule['type'] == 'mac':
