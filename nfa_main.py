@@ -26,7 +26,7 @@ import select
 from getopt import getopt, GetoptError
 
 from signal import \
-    signal, Signals, SIGHUP, SIGINT, SIGTERM
+    signal, Signals, SIGALRM, SIGHUP, SIGINT, SIGTERM
 
 from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
@@ -38,6 +38,7 @@ import nfa_daemonize
 import nfa_netifyd
 import nfa_task
 import nfa_rule
+import nfa_timer
 
 from nfa_defaults import NFA_CONF
 from nfa_version import NFA_VERSION
@@ -45,15 +46,19 @@ from nfa_version import NFA_VERSION
 def nfa_signal_handler(signum, frame):
 
     if isinstance(SIGHUP, int):
+        signo_ALRM = SIGALRM
         signo_HUP = SIGHUP
         signo_INT = SIGINT
         signo_TERM = SIGTERM
     else:
+        signo_ALRM = SIGALRM.value
         signo_HUP = SIGHUP.value
         signo_INT = SIGINT.value
         signo_TERM = SIGTERM.value
 
-    if signum == signo_HUP:
+    if signum == signo_ALRM:
+        expire_matches = True
+    elif signum == signo_HUP:
         nfa_global.config_reload = True
     elif signum == signo_INT or signum == signo_TERM:
         syslog(LOG_WARNING, "Exiting...")
@@ -208,6 +213,10 @@ def nfa_main():
         config_dynamic = nfa_global.config.get('netify-fwa', 'path-config-dynamic')
         wd = inotify.add_watch(config_dynamic, flags.CLOSE_WRITE | flags.MOVE_SELF | flags.MODIFY)
 
+    ttl_match = nfa_global.config.get('netify-fwa', 'ttl-match')
+    match_expire_timer = nfa_timer.timer(int(ttl_match) / 2, False)
+    match_expire_timer.start()
+
     while not nfa_global.should_terminate:
 
         if wd is not None:
@@ -232,6 +241,9 @@ def nfa_main():
 
         if task_cat_cache_update is not None:
             task_cat_cache_update = nfa_cat_cache_reload(config_cat_cache, task_cat_cache_update)
+        if nfa_global.expire_matches:
+            nfa_global.fw.expire_matches()
+            nfa_global.expire_matches = False
 
         if fh is None:
             fh = nd.connect(
@@ -306,6 +318,7 @@ if __name__ == "__main__":
         if not nfa_create_daemon():
             sys.exit(1)
 
+    signal(SIGALRM, nfa_signal_handler)
     signal(SIGHUP, nfa_signal_handler)
     signal(SIGINT, nfa_signal_handler)
     signal(SIGTERM, nfa_signal_handler)

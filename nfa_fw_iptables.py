@@ -269,6 +269,11 @@ class nfa_fw_iptables():
             else:
                 nfa_global.stats['blocked'] += 1
 
+    # Expire matches
+
+    def expire_matches(self):
+        pass
+
     # Test
 
     def test(self):

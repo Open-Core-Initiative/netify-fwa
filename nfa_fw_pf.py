@@ -373,6 +373,8 @@ class nfa_fw_pf():
             if rule['type'] != 'block': continue
             if not nfa_rule.flow_matches(flow['flow'], rule): continue
 
+            print("process_flow: rule: block: matches")
+
             anchor = "nfa/block_%s" %(nfa_rule.criteria(rule))
 
             self.table_upsert(anchor, "nfa_local", flow['flow']['local_ip'])
@@ -381,6 +383,19 @@ class nfa_fw_pf():
             self.kill_state_by_host(flow['flow']['other_ip'])
 
             nfa_global.stats['blocked'] += 1
+
+    # Expire matches
+
+    def expire_matches(self):
+
+        anchors = self.anchor_list()
+
+        for anchor in anchors:
+            if anchor == 'nfa/00_whitelist':
+                continue
+
+            self.table_expire(anchor, "nfa_local")
+            self.table_expire(anchor, "nfa_remote")
 
     # Install hooks
 

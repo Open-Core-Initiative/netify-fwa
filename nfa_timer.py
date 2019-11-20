@@ -14,27 +14,42 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import threading
+import time
+
+from signal import SIGALRM
+
 from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
-debug = False
+import nfa_global
 
-pid_file = '/var/run/netify-fwa/netify-fwa.pid'
+class timer(threading.Thread):
+    interval = 0
+    one_shot = True
+    signo_ALRM = 0
 
-fw = None
-fw_interfaces = { "internal": [], "external": [] }
+    def __init__(self, interval, one_shot=True):
 
-config_reload = True
-should_terminate = False
-expire_matches = False
+        self.interval = int(interval)
+        self.one_shot = one_shot
 
-config = None
-config_dynamic = None
-config_cat_cache = None
+        if isinstance(SIGALRM, int):
+            self.signo_ALRM = SIGALRM
+        else:
+            self.signo_ALRM = SIGALRM.value
 
-log_options = LOG_PID | LOG_PERROR
+        super().__init__()
 
-stats = { 'flows': 0, 'blocked': 0, 'prioritized': 0 }
+    def run(self):
 
-rx_app_id = None
+        while nfa_global.should_terminate is False:
+            ticks = self.interval
+            while ticks > 0 and nfa_global.should_terminate is False:
+                time.sleep(1)
+                ticks -= 1
+            os.kill(os.getpid(), self.signo_ALRM)
+            if self.one_shot:
+                return
