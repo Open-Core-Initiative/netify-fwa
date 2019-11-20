@@ -32,6 +32,7 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
+import nfa_global
 import nfa_config
 import nfa_daemonize
 import nfa_netifyd
@@ -39,31 +40,9 @@ import nfa_task
 import nfa_rule
 
 from nfa_defaults import NFA_CONF
-
 from nfa_version import NFA_VERSION
 
-__nfa_debug = False
-
-__nfa_pid_file = '/var/run/netify-fwa/netify-fwa.pid'
-
-__nfa_fw = None
-__nfa_fw_interfaces = { "internal": [], "external": [] }
-
-__nfa_config_reload = True
-__nfa_should_terminate = False
-
-__nfa_config = None
-__nfa_config_dynamic = None
-
-global __nfa_config_cat_cache
-__nfa_config_cat_cache = None
-
-__nfa_log_options = LOG_PID | LOG_PERROR
-
-__nfa_stats = { 'flows': 0, 'blocked': 0, 'prioritized': 0 }
-
 def nfa_signal_handler(signum, frame):
-    global __nfa_config_reload, __nfa_should_terminate
 
     if isinstance(SIGHUP, int):
         signo_HUP = SIGHUP
@@ -75,41 +54,39 @@ def nfa_signal_handler(signum, frame):
         signo_TERM = SIGTERM.value
 
     if signum == signo_HUP:
-        __nfa_config_reload = True
+        nfa_global.config_reload = True
     elif signum == signo_INT or signum == signo_TERM:
         syslog(LOG_WARNING, "Exiting...")
-        __nfa_should_terminate = True
+        nfa_global.should_terminate = True
     else:
         syslog(LOG_WARNING,
             "Caught unhandled signal: %s" %(Signals(signum).name))
 
 def nfa_config_load():
-    global __nfa_config
 
-    __nfa_config = nfa_config.load_main(NFA_CONF)
+    nfa_global.config = nfa_config.load_main(NFA_CONF)
 
 def nfa_config_reload():
-    global __nfa_config_reload
-    global __nfa_config_dynamic
 
-    config_dynamic = __nfa_config.get('netify-fwa', 'path-config-dynamic')
+    config_dynamic = nfa_global.config.get('netify-fwa', 'path-config-dynamic')
 
     if os.path.isfile(config_dynamic):
 
         config = nfa_config.load_dynamic(config_dynamic)
         if config is not None:
-            __nfa_config_dynamic = config
+            nfa_global.config_dynamic = config
             syslog("Loaded dynamic configuration.")
 
-    __nfa_config_reload = False
+    nfa_global.config_reload = False
 
 def nfa_cat_cache_refresh(config_cat_cache, ttl_cat_cache):
+
     if not os.path.isfile(config_cat_cache) or \
         int(os.path.getmtime(config_cat_cache)) + int(ttl_cat_cache) < int(time.time()):
 
         syslog(LOG_DEBUG, "Updating category cache...")
 
-        task_cat_update = nfa_task.cat_update(__nfa_config)
+        task_cat_update = nfa_task.cat_update(nfa_global.config)
         task_cat_update.start()
 
         return task_cat_update
@@ -117,7 +94,6 @@ def nfa_cat_cache_refresh(config_cat_cache, ttl_cat_cache):
     return None
 
 def nfa_cat_cache_reload(config_cat_cache, task_cat_update):
-    global __nfa_config_cat_cache
 
     if not task_cat_update.is_alive():
 
@@ -130,36 +106,35 @@ def nfa_cat_cache_reload(config_cat_cache, task_cat_update):
 
             if cat_cache is not None:
                 syslog("Reloaded category cache.")
-                __nfa_config_cat_cache = cat_cache
+                nfa_global.config_cat_cache = cat_cache
 
         return None
 
     return task_cat_update
 
 def nfa_fw_init():
-    global __nfa_fw, __nfa_config, __nfa_fw_interfaces
 
     try:
-        fw_engine = __nfa_config.get('netify-fwa', 'firewall-engine')
+        fw_engine = nfa_global.config.get('netify-fwa', 'firewall-engine')
     except NoOptionError as e:
         printf("Mandatory configuration option not set: firewall-engine")
         return False
 
     if fw_engine == 'iptables':
         from nfa_fw_iptables import nfa_fw_iptables
-        __nfa_fw = nfa_fw_iptables(__nfa_config)
+        nfa_global.fw = nfa_fw_iptables(nfa_global.config)
     elif fw_engine == 'firewalld':
         from nfa_fw_firewalld import nfa_fw_firewalld
-        __nfa_fw = nfa_fw_firewalld(__nfa_config)
+        nfa_global.fw = nfa_fw_firewalld(nfa_global.config)
     elif fw_engine == 'clearos':
         from nfa_fw_clearos import nfa_fw_clearos
-        __nfa_fw = nfa_fw_clearos(__nfa_config)
+        nfa_global.fw = nfa_fw_clearos(nfa_global.config)
     elif fw_engine == 'pf':
         from nfa_fw_pf import nfa_fw_pf
-        __nfa_fw = nfa_fw_pf(__nfa_config)
+        nfa_global.fw = nfa_fw_pf(nfa_global.config)
     elif fw_engine == 'pfsense':
         from nfa_fw_pfsense import nfa_fw_pfsense
-        __nfa_fw = nfa_fw_pfsense(__nfa_config)
+        nfa_global.fw = nfa_fw_pfsense(nfa_global.config)
     else:
         print("Unsupported firewall engine: %s" %(fw_engine))
         return False
@@ -167,40 +142,39 @@ def nfa_fw_init():
     if fw_engine == 'firewalld':
         # XXX: Have to open syslog again because the firewalld client code
         # is rude and does some of it's own syslog initialization.
-        openlog('netify-fwa', __nfa_log_options, LOG_DAEMON)
+        openlog('netify-fwa', nfa_global.log_options, LOG_DAEMON)
 
-    syslog("Firewall engine: %s" %(__nfa_fw.get_version()))
+    syslog("Firewall engine: %s" %(nfa_global.fw.get_version()))
 
-    if not __nfa_fw.is_running():
+    if not nfa_global.fw.is_running():
         syslog(LOG_ERR, "Firewall engine is not running.")
         return False
 
-    __nfa_fw.test()
+    nfa_global.fw.test()
 
-    return __nfa_fw.install_hooks()
+    return nfa_global.fw.install_hooks()
 
 def nfa_process_agent_status(status):
-    global __nfa_stats
 
     if 'flows' in status and 'flows_prev' in status:
-        __nfa_stats['flows'] = status['flows']
+        nfa_global.stats['flows'] = status['flows']
 
-    status = __nfa_config.get('netify-fwa', 'path-status')
+    status = nfa_global.config.get('netify-fwa', 'path-status')
 
     try:
         with open(status, 'w') as fh:
-            json.dump(__nfa_stats, fh)
+            json.dump(nfa_global.stats, fh)
     except:
         syslog(LOG_ERR, "Unable to update status file: %s" %(status))
 
-    __nfa_stats['blocked'] = 0
-    __nfa_stats['prioritized'] = 0
+    nfa_global.stats['blocked'] = 0
+    nfa_global.stats['prioritized'] = 0
 
 def nfa_create_daemon():
     try:
         nfa_daemonize.create(
-            pid_file=__nfa_pid_file,
-            debug=__nfa_debug
+            pid_file=nfa_global.pid_file,
+            debug=nfa_global.debug
         )
     except BlockingIOError as e:
         if e.errno == errno.EAGAIN or e.errno == errno.EACCESS:
@@ -212,10 +186,6 @@ def nfa_create_daemon():
     return True
 
 def nfa_main():
-    global __nfa_fw
-    global __nfa_rx_app_id
-    global __nfa_config_reload
-    global __nfa_config, __nfa_config_dynamic, __nfa_config_cat_cache
 
     nfa_fw_init()
 
@@ -224,21 +194,21 @@ def nfa_main():
 
     task_cat_cache_update = None
 
-    config_cat_cache = __nfa_config.get('netify-api', 'path-category-cache')
-    ttl_cat_cache = __nfa_config.get('netify-api', 'ttl-category-cache')
+    config_cat_cache = nfa_global.config.get('netify-api', 'path-category-cache')
+    ttl_cat_cache = nfa_global.config.get('netify-api', 'ttl-category-cache')
 
     if os.path.isfile(config_cat_cache):
-        __nfa_config_cat_cache = nfa_config.load_cat_cache(config_cat_cache)
+        nfa_global.config_cat_cache = nfa_config.load_cat_cache(config_cat_cache)
 
     wd = None
-    if __nfa_fw.flavor == 'iptables':
+    if nfa_global.fw.flavor == 'iptables':
         from inotify_simple import INotify, flags
 
         inotify = INotify()
-        config_dynamic = __nfa_config.get('netify-fwa', 'path-config-dynamic')
+        config_dynamic = nfa_global.config.get('netify-fwa', 'path-config-dynamic')
         wd = inotify.add_watch(config_dynamic, flags.CLOSE_WRITE | flags.MOVE_SELF | flags.MODIFY)
 
-    while not __nfa_should_terminate:
+    while not nfa_global.should_terminate:
 
         if wd is not None:
             fd_read = [ inotify.fd ]
@@ -248,19 +218,14 @@ def nfa_main():
 
             if len(rd):
                 for event in inotify.read():
-                    __nfa_config_reload = True
+                    nfa_global.config_reload = True
 
-        if __nfa_config_reload:
+        if nfa_global.config_reload:
             nfa_config_reload()
-            __nfa_fw.sync(__nfa_config_dynamic)
+            nfa_global.fw.sync(nfa_global.config_dynamic)
             if fh is not None:
                 nd.close()
                 fh = None
-
-        if __nfa_config_cat_cache is None:
-            print("config cat cache is None")
-        else:
-            print("config cat cache is not None")
 
         if task_cat_cache_update is None:
             task_cat_cache_update = nfa_cat_cache_refresh(config_cat_cache, ttl_cat_cache)
@@ -270,7 +235,7 @@ def nfa_main():
 
         if fh is None:
             fh = nd.connect(
-                __nfa_config.get('netify-agent', 'socket-uri')
+                nfa_global.config.get('netify-agent', 'socket-uri')
             )
             time.sleep(1)
         else:
@@ -300,19 +265,19 @@ def nfa_main():
 
                 #print(jd)
 
-                __nfa_fw.process_flow(jd, __nfa_config_dynamic, __nfa_stats)
+                nfa_global.fw.process_flow(jd)
 
             if jd['type'] == 'agent_status':
                 nfa_process_agent_status(jd)
 
     nd.close()
-    __nfa_fw.remove_hooks()
+    nfa_global.fw.remove_hooks()
 
     return 0
 
 if __name__ == "__main__":
 
-    openlog('netify-fwa', __nfa_log_options, LOG_DAEMON)
+    openlog('netify-fwa', nfa_global.log_options, LOG_DAEMON)
     syslog("Netify FWA v%s started." %(NFA_VERSION))
 
     nfa_config_load()
@@ -326,18 +291,18 @@ if __name__ == "__main__":
 
     for option in params:
         if option[0] == '-d' or option[0] == '--debug':
-            __nfa_debug = True
+            nfa_global.debug = True
         elif option[0] == '--save-default-config':
             print("Generating default configuration file: %s" %(NFA_CONF))
-            nfa_config.save_main(NFA_CONF, __nfa_config)
+            nfa_config.save_main(NFA_CONF, nfa_global.config)
             sys.exit(0)
         elif option[0] == '--help':
             print("Netify FWA v%s" %(NFA_VERSION))
             sys.exit(0)
 
-    if not __nfa_debug:
-        __nfa_log_options = LOG_PID
-        openlog('netify-fwa', __nfa_log_options, LOG_DAEMON)
+    if not nfa_global.debug:
+        nfa_global.log_options = LOG_PID
+        openlog('netify-fwa', nfa_global.log_options, LOG_DAEMON)
         if not nfa_create_daemon():
             sys.exit(1)
 

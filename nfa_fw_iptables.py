@@ -20,6 +20,7 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
+import nfa_global
 import nfa_ipset
 import nfa_rule
 
@@ -232,8 +233,8 @@ class nfa_fw_iptables():
                 syslog(LOG_DEBUG, "ipset destroy: %s" %(name))
                 nfa_ipset.nfa_ipset_destroy(name)
 
-            __nfa_ipsets = nfa_ipset.nfa_ipset_list()
-            #syslog(LOG_DEBUG, "ipset new: %s" %(__nfa_ipsets))
+            #ipsets = nfa_ipset.nfa_ipset_list()
+            #syslog(LOG_DEBUG, "ipset new: %s" %(ipsets))
 
         for rule in config_dynamic['whitelist']:
             if rule['type'] == 'mac':
@@ -252,11 +253,14 @@ class nfa_fw_iptables():
                 self.add_rule('mangle', 'NFA_whitelist',
                     '%s %s -j ACCEPT' %(direction, rule['address']), ipv)
 
-    def process_flow(self, flow, config_dynamic, nfa_stats):
-        if config_dynamic is None:
+    # Process flow
+
+    def process_flow(self, flow):
+
+        if nfa_global.config_dynamic is None:
             return
 
-        for rule in config_dynamic['rules']:
+        for rule in nfa_global.config_dynamic['rules']:
             if rule['type'] != 'block': continue
             if not nfa_rule.flow_matches(flow['flow'], rule): continue
 
@@ -268,7 +272,7 @@ class nfa_fw_iptables():
                 flow['flow']['local_ip']):
                 syslog(LOG_WARNING, "Error upserting ipset with flow match.")
             else:
-                nfa_stats['blocked'] += 1
+                nfa_global.stats['blocked'] += 1
 
     # Test
 

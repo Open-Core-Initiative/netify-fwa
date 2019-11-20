@@ -21,6 +21,7 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
+import nfa_global
 import nfa_rule
 
 class nfa_fw_pf():
@@ -90,13 +91,18 @@ class nfa_fw_pf():
 
         result = subprocess.run(
             ['pfctl', '-a', anchor, '-s', 'Anchors'],
-                stdout=subprocess.PIPE, universal_newlines=True
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True
         )
         if result.returncode == 0:
             if len(result.stdout):
                 anchors = result.stdout.split()
         else:
-            syslog(LOG_ERR, "anchor_list: error: %s" %(result))
+            syslog(LOG_DEBUG, "anchor_list: error: %s" %(result))
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_ERR, "anchor_list: %s" %(line))
 
         return anchors
 
@@ -105,10 +111,20 @@ class nfa_fw_pf():
     def anchor_flush(self, anchor):
         result = subprocess.run(
             ['pfctl', '-a', anchor, '-F', 'rules'],
-                stdout=subprocess.PIPE, universal_newlines=True
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True
         )
         if result.returncode != 0:
-            syslog(LOG_ERR, "anchor_flush: error: %s" %(result))
+            syslog(LOG_DEBUG, "anchor_flush: error: %s" %(result))
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_ERR, "anchor_flush: %s" %(line))
+        else:
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_DEBUG, "anchor_flush: %s" %(line))
 
     # Load rules into anchor
 
@@ -121,10 +137,20 @@ class nfa_fw_pf():
 
             result = subprocess.run(
                 ['pfctl', '-a', anchor, '-f', fh.name],
-                    stdout=subprocess.PIPE, universal_newlines=True
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    universal_newlines=True
             )
             if result.returncode != 0:
-                syslog(LOG_ERR, "anchor_flush: error: %s" %(result))
+                syslog(LOG_DEBUG, "anchor_flush: error: %s" %(result))
+                if len(result.stderr):
+                    output = result.stderr.rstrip().split("\n")
+                    for line in output:
+                        syslog(LOG_ERR, "anchor_load: %s" %(line))
+            else:
+                if len(result.stderr):
+                    output = result.stderr.rstrip().split("\n")
+                    for line in output:
+                        syslog(LOG_DEBUG, "anchor_load: %s" %(line))
         finally:
             fh.close()
 
@@ -133,37 +159,78 @@ class nfa_fw_pf():
     def table_upsert(self, anchor, table, host):
         result = subprocess.run(
             ['pfctl', '-a', anchor, '-t', table, '-T', 'delete', host],
-                stdout=subprocess.PIPE, universal_newlines=True
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True
         )
         if result.returncode != 0:
-            syslog(LOG_ERR, "table_upsert: error: %s" %(result))
+            syslog(LOG_DEBUG, "table_upsert: error: %s" %(result))
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_ERR, "table_upsert: %s" %(line))
+        else:
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_DEBUG, "table_upsert: %s" %(line))
 
         result = subprocess.run(
             ['pfctl', '-a', anchor, '-t', table, '-T', 'add', host],
-                stdout=subprocess.PIPE, universal_newlines=True
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True
         )
         if result.returncode != 0:
-            syslog(LOG_ERR, "table_upsert: error: %s" %(result))
+            syslog(LOG_DEBUG, "table_upsert: error: %s" %(result))
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_ERR, "table_upsert: %s" %(line))
+        else:
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_DEBUG, "table_upsert: %s" %(line))
 
     # Flush table
 
     def table_flush(self, anchor, table):
         result = subprocess.run(
             ['pfctl', '-a', anchor, '-t', table, '-T', 'flush'],
-                stdout=subprocess.PIPE, universal_newlines=True
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True
         )
         if result.returncode != 0:
-            syslog(LOG_ERR, "table_flush: error: %s" %(result))
+            syslog(LOG_DEBUG, "table_flush: error: %s" %(result))
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_ERR, "table_flush: %s" %(line))
+        else:
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_DEBUG, "table_flush: %s" %(line))
 
     # Kill table
 
     def table_kill(self, anchor, table):
         result = subprocess.run(
             ['pfctl', '-a', anchor, '-t', table, '-T', 'kill'],
-                stdout=subprocess.PIPE, universal_newlines=True
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True
         )
         if result.returncode != 0:
-            syslog(LOG_ERR, "table_kill: error: %s" %(result))
+            syslog(LOG_DEBUG, "table_kill: error: %s" %(result))
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_ERR, "table_kill: %s" %(line))
+        else:
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_DEBUG, "table_kill: %s" %(line))
+
 
     # Expire table entries
 
@@ -172,30 +239,60 @@ class nfa_fw_pf():
 
         result = subprocess.run(
             ['pfctl', '-a', anchor, '-t', table, '-T', 'expire', ttl_match],
-                stdout=subprocess.PIPE, universal_newlines=True
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True
         )
         if result.returncode != 0:
-            syslog(LOG_ERR, "table_expire: error: %s" %(result))
+            syslog(LOG_DEBUG, "table_expire: error: %s" %(result))
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_ERR, "table_expire: %s" %(line))
+        else:
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_DEBUG, "table_expire: %s" %(line))
 
     # Kill state for entries matching label
 
     def kill_state_by_label(self, anchor, label):
         result = subprocess.run(
             ['pfctl', '-a', anchor, '-k', 'label', '-k', label],
-                stdout=subprocess.PIPE, universal_newlines=True
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True
         )
         if result.returncode != 0:
-            syslog(LOG_ERR, "kill_state_by_label: error: %s" %(result))
+            syslog(LOG_DEBUG, "kill_state_by_label: error: %s" %(result))
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_ERR, "kill_state_by_label: %s" %(line))
+        else:
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_DEBUG, "kill_state_by_label: %s" %(line))
 
     # Kill state for entries matching host
 
     def kill_state_by_host(self, host):
         result = subprocess.run(
             ['pfctl', '-k', '0.0.0.0/0', '-k', host],
-                stdout=subprocess.PIPE, universal_newlines=True
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True
         )
         if result.returncode != 0:
-            syslog(LOG_ERR, "kill_state_by_host: error: %s" %(result))
+            syslog(LOG_DEBUG, "kill_state_by_host: error: %s" %(result))
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_ERR, "kill_state_by_host: %s" %(line))
+        else:
+            if len(result.stderr):
+                output = result.stderr.rstrip().split("\n")
+                for line in output:
+                    syslog(LOG_DEBUG, "kill_state_by_host: %s" %(line))
 
     # Synchronize state
 
@@ -267,11 +364,12 @@ class nfa_fw_pf():
 
     # Process flow
 
-    def process_flow(self, flow, config_dynamic, nfa_stats):
-        if config_dynamic is None:
+    def process_flow(self, flow):
+
+        if nfa_global.config_dynamic is None:
             return
 
-        for rule in config_dynamic['rules']:
+        for rule in nfa_global.config_dynamic['rules']:
             if rule['type'] != 'block': continue
             if not nfa_rule.flow_matches(flow['flow'], rule): continue
 
@@ -281,6 +379,8 @@ class nfa_fw_pf():
             self.table_upsert(anchor, "nfa_remote", flow['flow']['other_ip'])
 
             self.kill_state_by_host(flow['flow']['other_ip'])
+
+            nfa_global.stats['blocked'] += 1
 
     # Install hooks
 

@@ -21,8 +21,13 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
+import nfa_global
+
 def get(url):
     try:
+        if nfa_global.should_terminate:
+            return None
+
         with urllib.request.urlopen(url) as ul:
             data = json.loads(ul.read().decode())
             #syslog(LOG_DEBUG str(data))

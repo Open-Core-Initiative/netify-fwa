@@ -18,6 +18,7 @@ import json
 import socket
 import threading
 
+import nfa_global
 import nfa_config
 import nfa_netify_api
 
@@ -44,18 +45,19 @@ class cat_update(threading.Thread):
                 url_api + '/lookup/protocols'
             )
 
-            if pages_protocols is None:
+            if pages_protocols is None or nfa_global.should_terminate:
                 return
 
             pages_applications = nfa_netify_api.get_data(
                 url_api + '/lookup/applications'
             )
 
-            if pages_applications is None:
+            if pages_applications is None or nfa_global.should_terminate:
                 return
         except socket.gaierror as e:
             syslog(LOG_WARNING,
                 "Netify API request failed: %s: %s [%d]" %(url_api, e.errstr, e.errno))
+            return
 
         protocols = {}
 
