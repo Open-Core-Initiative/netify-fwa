@@ -54,6 +54,8 @@ __nfa_should_terminate = False
 
 __nfa_config = None
 __nfa_config_dynamic = None
+
+global __nfa_config_cat_cache
 __nfa_config_cat_cache = None
 
 __nfa_log_options = LOG_PID | LOG_PERROR
@@ -254,6 +256,11 @@ def nfa_main():
             if fh is not None:
                 nd.close()
                 fh = None
+
+        if __nfa_config_cat_cache is None:
+            print("config cat cache is None")
+        else:
+            print("config cat cache is not None")
 
         if task_cat_cache_update is None:
             task_cat_cache_update = nfa_cat_cache_refresh(config_cat_cache, ttl_cat_cache)

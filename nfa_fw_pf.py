@@ -187,6 +187,16 @@ class nfa_fw_pf():
         if result.returncode != 0:
             syslog(LOG_ERR, "kill_state_by_label: error: %s" %(result))
 
+    # Kill state for entries matching host
+
+    def kill_state_by_host(self, host):
+        result = subprocess.run(
+            ['pfctl', '-k', '0.0.0.0/0', '-k', host],
+                stdout=subprocess.PIPE, universal_newlines=True
+        )
+        if result.returncode != 0:
+            syslog(LOG_ERR, "kill_state_by_host: error: %s" %(result))
+
     # Synchronize state
 
     def sync(self, config_dynamic):
@@ -213,28 +223,28 @@ class nfa_fw_pf():
                 syslog(LOG_WARNING, "Time-of-day rules not supported by pf driver.")
                 continue
 
-            name = "block_%s" %(nfa_rule.criteria(rule))
+            name = "nfa/block_%s" %(nfa_rule.criteria(rule))
 
             ba_new.append(name)
 
-            self.anchor_flush("nfa/%s" %(name))
+            self.anchor_flush(name)
 
             rules = [
                 b'block drop log quick from <nfa_local> to <nfa_remote> label "nfa_block"',
                 b'block drop log quick from <nfa_remote> to <nfa_local> label "nfa_block"'
             ]
-            self.anchor_load("nfa/%s" %(name), rules)
+            self.anchor_load(name, rules)
 
         for name in ba_existing:
             if name in ba_new: continue
 
-            self.table_flush("nfa/%s" %(name), 'nfa_local')
-            self.table_flush("nfa/%s" %(name), 'nfa_remote')
+            self.table_flush(name, 'nfa_local')
+            self.table_flush(name, 'nfa_remote')
 
-            self.table_kill("nfa/%s" %(name), 'nfa_local')
-            self.table_kill("nfa/%s" %(name), 'nfa_remote')
+            self.table_kill(name, 'nfa_local')
+            self.table_kill(name, 'nfa_remote')
 
-            self.anchor_flush("nfa/%s" %(name))
+            self.anchor_flush(name)
 
         rules = [ b'anchor "00_whitelist"' ]
 
@@ -265,10 +275,12 @@ class nfa_fw_pf():
             if rule['type'] != 'block': continue
             if not nfa_rule.flow_matches(flow['flow'], rule): continue
 
-            anchor = "nfa/%s" %(nfa_rule.criteria(rule))
+            anchor = "nfa/block_%s" %(nfa_rule.criteria(rule))
 
             self.table_upsert(anchor, "nfa_local", flow['flow']['local_ip'])
             self.table_upsert(anchor, "nfa_remote", flow['flow']['other_ip'])
+
+            self.kill_state_by_host(flow['flow']['other_ip'])
 
     # Install hooks
 

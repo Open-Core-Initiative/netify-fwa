@@ -62,7 +62,7 @@ def get_data(url):
 
     if total_pages > 1:
         for page in range(2, total_pages + 1):
-            #syslog(LOG_DEBUG, "Get page: %d / %d..." %(page, total_pages))
+            syslog(LOG_DEBUG, "Get page: %d / %d..." %(page, total_pages))
             data = get(url + '?page=' + str(page))
 
             if data is None:
