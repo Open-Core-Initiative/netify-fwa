@@ -57,7 +57,7 @@ def nfa_signal_handler(signum, frame):
         signo_TERM = SIGTERM.value
 
     if signum == signo_ALRM:
-        expire_matches = True
+        nfa_global.expire_matches = True
     elif signum == signo_HUP:
         nfa_global.config_reload = True
     elif signum == signo_INT or signum == signo_TERM:
@@ -213,8 +213,7 @@ def nfa_main():
         config_dynamic = nfa_global.config.get('netify-fwa', 'path-config-dynamic')
         wd = inotify.add_watch(config_dynamic, flags.CLOSE_WRITE | flags.MOVE_SELF | flags.MODIFY)
 
-    ttl_match = nfa_global.config.get('netify-fwa', 'ttl-match')
-    match_expire_timer = nfa_timer.timer(int(ttl_match) / 2, False)
+    match_expire_timer = nfa_timer.timer(60, False)
     match_expire_timer.start()
 
     while not nfa_global.should_terminate:
@@ -241,6 +240,7 @@ def nfa_main():
 
         if task_cat_cache_update is not None:
             task_cat_cache_update = nfa_cat_cache_reload(config_cat_cache, task_cat_cache_update)
+
         if nfa_global.expire_matches:
             nfa_global.fw.expire_matches()
             nfa_global.expire_matches = False

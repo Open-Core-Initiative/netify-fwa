@@ -14,8 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import subprocess
-
 from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
@@ -23,11 +21,13 @@ from syslog import \
 import nfa_global
 import nfa_ipset
 import nfa_rule
+import nfa_util
 
 class nfa_fw_iptables():
     """Generic iptables support for Netify FWA"""
 
     def __init__(self, nfa_config):
+
         self.flavor = 'iptables'
         self.nfa_config = nfa_config
         self.mark_base = int(nfa_config.get('netify-fwa', 'mark-base'), 16)
@@ -38,11 +38,15 @@ class nfa_fw_iptables():
     # Status
 
     def get_version(self):
-        result = subprocess.run(
-            ["iptables", "--version"],
-            stdout=subprocess.PIPE, universal_newlines=True
+
+        result = nfa_util.exec(
+            'nfa_fw_iptables::get_version', ["iptables", "--version"]
         )
-        return result.stdout
+
+        if result['rc'] == 0:
+            return result['stdout']
+
+        return 'iptables'
 
     def is_running(self):
         return True

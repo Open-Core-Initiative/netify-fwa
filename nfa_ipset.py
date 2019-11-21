@@ -14,36 +14,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import subprocess
-
 from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
-def nfa_ipset_list():
-    sets = []
+import nfa_util
 
-    result = subprocess.run(
-        ["ipset", "list", "-n"],
-            stdout=subprocess.PIPE, universal_newlines=True
-    )
-    if result.returncode == 0:
-        if len(result.stdout):
-            _sets = result.stdout.split()
+def nfa_ipset_list():
+
+    result = nfa_util.exec('nfa_ipset_list', ["ipset", "list", "-n"])
+
+    if result['rc'] == 0:
+        if len(result['stdout']):
+            sets = []
+            _sets = result['stdout'].split()
             for s in _sets:
                 if s.startswith('NFA4_') or s.startswith('NFA6_'):
                     sets.append(s)
-    else:
-        syslog(LOG_ERR, "ipset error: %s" %(result))
+            return sets
 
-    return sets
+    return []
 
 def nfa_ipset_destroy(name):
-    params = ["ipset", "destroy", name]
-    result = subprocess.run(params,
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-    )
-    if result.returncode != 0:
+
+    result = nfa_util.exec('nfa_ipset_destroy', ["ipset", "destroy", name])
+
+    if result['rc'] != 0:
         return False
 
     return True
@@ -80,14 +76,14 @@ class nfa_ipset():
             self.name = name[0:maxlen]
 
     def create(self):
+
         params = ["ipset", "create", self.name, self.type, "family", self.ipv]
         if self.timeout > 0:
             params.extend(["timeout", str(self.timeout)])
 
-        result = subprocess.run(params,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
-        if result.returncode != 0:
+        result = nfa_util.exec('nfa_ipset::create', params)
+
+        if result['rc'] != 0:
             return False
 
         return True
@@ -96,12 +92,13 @@ class nfa_ipset():
         return nfa_ipset_destroy(self.name)
 
     def upsert(self, other_ip, other_port, local_ip):
-        entry = "%s,%d,%s" %(other_ip, other_port, local_ip)
-        params = ["ipset", "-exist", "add", self.name, entry]
-        result = subprocess.run(params,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+
+        result = nfa_util.exec(
+            'nfa_ipset::upsert',
+            ["ipset", "-exist", "add", self.name,
+                "%s,%d,%s" %(other_ip, other_port, local_ip)]
         )
-        if result.returncode != 0:
+        if result['rc'] != 0:
             return False
 
         return True

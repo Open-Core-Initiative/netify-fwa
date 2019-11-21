@@ -15,13 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-import subprocess
 
 from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
 import nfa_ipset
+import nfa_util
 
 from nfa_fw_iptables import nfa_fw_iptables
 
@@ -36,25 +36,30 @@ class nfa_fw_clearos(nfa_fw_iptables):
     # Status
 
     def get_version(self):
-        result = subprocess.run(
-            ["iptables", "--version"],
-            stdout=subprocess.PIPE, universal_newlines=True
+        result = nfa_util.exec(
+            'nfa_fw_clearos::get_version', ["iptables", "--version"]
         )
-        version = result.stdout
-        parts = version.split()
-        return "ClearOS Firewall %s" %(parts[1])
+
+        if result['rc'] == 0:
+            version = result['stdout']
+            parts = version.split()
+            return "ClearOS Firewall %s" %(parts[1])
+        else
+            return "ClearOS Firewall"
 
     def is_running(self):
-        result = subprocess.run(
-            ["systemctl", "--property=ActiveState", "show", "firewall"],
-            stdout=subprocess.PIPE, universal_newlines=True
+        result = nfa_util.exec(
+            'nfa_fw_clearos::is_running',
+            ["systemctl", "--property=ActiveState", "show", "firewall"]
         )
-        rx_kv = re.compile('^ActiveState\s*=\s*(.*)$')
 
-        match = rx_kv.match(result.stdout)
+        rx_kv = re.compile('^ActiveState\s*=\s*(.*)$')
+        match = rx_kv.match(result['stdout'])
+
         if match is not None:
             if match.group(1) == "active":
                 return True
+
         return False
 
     # Interfaces

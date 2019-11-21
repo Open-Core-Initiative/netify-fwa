@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import subprocess
 import xml.etree.ElementTree as et
 
 from syslog import \
@@ -23,10 +22,13 @@ from syslog import \
 
 from nfa_fw_pf import nfa_fw_pf
 
+import nfa_util
+
 class nfa_fw_pfsense(nfa_fw_pf):
     """pfSense support for Netify FWA"""
 
     def __init__(self, nfa_config):
+
         super(nfa_fw_pfsense, self).__init__(nfa_config)
         syslog(LOG_DEBUG, "pfSense Firewall driver initialized.")
         self.load_pfsense_configuration()
@@ -34,11 +36,15 @@ class nfa_fw_pfsense(nfa_fw_pf):
     # Status
 
     def get_version(self):
-        result = subprocess.run(
-            ["cat", "/etc/version"],
-            stdout=subprocess.PIPE, universal_newlines=True
+
+        result = nfa_util.exec(
+            'nfa_fw_pfsense::get_version', ["cat", "/etc/version"]
         )
-        return "pfSense v%s" %(result.stdout)
+
+        if result['rc'] == 0:
+            return "pfSense v%s" %(result['stdout'])
+
+        return 'pfSense'
 
     def is_running(self):
         return True
