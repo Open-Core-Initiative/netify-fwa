@@ -364,7 +364,7 @@ def nfa_flow_matches_rule(flow, rule):
     app_id = 0
     app_match = __nfa_rx_app_id.match(flow['detected_application_name'])
     if app_match is not None:
-        app_id = app_match.group()
+        app_id = int(app_match.group())
 
     if 'protocol' in rule and flow['detected_protocol'] != rule['protocol']:
         return False
@@ -378,9 +378,10 @@ def nfa_flow_matches_rule(flow, rule):
         if __nfa_config_cat_cache['protocols'][key] != rule['protocol_category']:
             return False
     if 'application_category' in rule:
-        if app_id not in __nfa_config_cat_cache['applications']:
+        key = str(app_id)
+        if key not in __nfa_config_cat_cache['applications']:
             return False
-        if __nfa_config_cat_cache['applications'][app_id] != rule['application_category']:
+        if __nfa_config_cat_cache['applications'][key] != rule['application_category']:
             return False
 
     return True
