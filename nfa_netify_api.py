@@ -32,6 +32,7 @@ def get(url):
             data = json.loads(ul.read().decode())
             #syslog(LOG_DEBUG str(data))
         return data
+
     except urllib.error.URLError as e:
         syslog(LOG_ERR, "API request failed: %s" %(e.reason))
         return None

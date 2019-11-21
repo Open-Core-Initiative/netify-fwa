@@ -52,9 +52,10 @@ def flow_matches(flow, rule):
             if nfa_global.config_cat_cache['protocols'][key] != rule['protocol_category']:
                 return False
         if 'application_category' in rule:
-            if app_id not in nfa_global.config_cat_cache['applications']:
+            key = str(app_id)
+            if key not in nfa_global.config_cat_cache['applications']:
                 return False
-            if nfa_global.config_cat_cache['applications'][app_id] != rule['application_category']:
+            if nfa_global.config_cat_cache['applications'][key] != rule['application_category']:
                 return False
     except TypeError:
         return False
