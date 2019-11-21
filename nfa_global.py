@@ -35,6 +35,13 @@ config_cat_cache = None
 
 log_options = LOG_PID | LOG_PERROR
 
-stats = { 'flows': 0, 'blocked': 0, 'prioritized': 0 }
+timestamp_epoch = 0
+
+stats = {
+    'uptime': 0,
+    'flows': 0,
+    'blocked': 0, 'prioritized': 0,
+    'blocked_total': 0, 'prioritized_total': 0
+}
 
 rx_app_id = None

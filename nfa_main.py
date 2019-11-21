@@ -22,6 +22,7 @@ import time
 import os.path
 import re
 import select
+import math
 
 from getopt import getopt, GetoptError
 
@@ -166,6 +167,10 @@ def nfa_process_agent_status(status):
 
     status = nfa_global.config.get('netify-fwa', 'path-status')
 
+    nfa_global.stats['uptime'] = math.floor(time.time()) - nfa_global.timestamp_epoch
+    nfa_global.stats['blocked_total'] += nfa_global.stats['blocked']
+    nfa_global.stats['prioritized_total'] += nfa_global.stats['prioritized']
+
     try:
         with open(status, 'w') as fh:
             json.dump(nfa_global.stats, fh)
@@ -191,6 +196,8 @@ def nfa_create_daemon():
     return True
 
 def nfa_main():
+
+    nfa_global.timestamp_epoch = math.floor(time.time())
 
     nfa_fw_init()
 
