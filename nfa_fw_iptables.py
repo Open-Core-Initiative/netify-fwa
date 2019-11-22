@@ -54,19 +54,32 @@ class nfa_fw_iptables():
     # Interfaces
 
     def get_external_interfaces(self):
-        ifaces = []
-
-        return ifaces
+        return self.nfa_config.get('iptables', 'interfaces-external').split(',')
 
     def get_internal_interfaces(self):
-        ifaces = []
-
-        return ifaces
+        return self.nfa_config.get('iptables', 'interfaces-internal').split(',')
 
     # Chains
 
     def get_chains(self):
+
+        table = self.nfa_config.get('iptables', 'table')
+
         nfa_chains = []
+
+        for ipv in [ 4, 6 ]:
+            iptables = 'ip%stables' %('' if ipv == 4 else '6')
+            result = nfa_util.exec(
+                'nfa_fw_iptables::get_chains', [ iptables, '-t', table, '-L',  '-n' ]
+            )
+
+        if result['rc'] != 0:
+            return nfa_chains
+
+#        lines = result['stdout'].rstrip().split("\n")
+
+#        for line in lines:
+#            if line.startswith('Chain NFA_'):
 
         return nfa_chains
 
@@ -230,10 +243,10 @@ class nfa_fw_iptables():
 
                     mark_base += 1
 
-            for name in ipsets_existing:
-                if name in ipsets_new: continue
-                syslog(LOG_DEBUG, "ipset destroy: %s" %(name))
-                nfa_ipset.nfa_ipset_destroy(name)
+        for name in ipsets_existing:
+            if name in ipsets_new: continue
+            syslog(LOG_DEBUG, "ipset destroy: %s" %(name))
+            nfa_ipset.nfa_ipset_destroy(name)
 
         for rule in config_dynamic['whitelist']:
             if rule['type'] == 'mac':

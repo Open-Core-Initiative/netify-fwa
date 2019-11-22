@@ -44,7 +44,7 @@ class nfa_fw_clearos(nfa_fw_iptables):
             version = result['stdout']
             parts = version.split()
             return "ClearOS Firewall %s" %(parts[1])
-        else
+        else:
             return "ClearOS Firewall"
 
     def is_running(self):
