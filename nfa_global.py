@@ -14,9 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from syslog import \
-    openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
-    LOG_DEBUG, LOG_ERR, LOG_WARNING
+from syslog import LOG_PID, LOG_PERROR
 
 debug = False
 
