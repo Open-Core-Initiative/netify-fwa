@@ -16,7 +16,7 @@ share/netify-fwa/nfa_fw_firewalld.py
 share/netify-fwa/nfa_fw_iptables.py
 share/netify-fwa/nfa_fw_pf.py
 share/netify-fwa/nfa_fw_pfsense.py
-share/netify-fwa/nfa_fw_global.py
+share/netify-fwa/nfa_global.py
 share/netify-fwa/nfa_ipset.py
 share/netify-fwa/nfa_main.py
 share/netify-fwa/nfa_netify_api.py
