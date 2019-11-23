@@ -28,12 +28,12 @@
 	<name>Netify FWA</name>
 	<description>Netify FWA for pfSense</description>
 	<version>%%PKGVERSION%%</version>
-	<title>Services: Netify FWA</title>
+	<title>Firewall: Netify FWA</title>
 	<include_file>/usr/local/pkg/netify-fwa/netify-fwa.inc</include_file>
 	<menu>
 		<name>Netify FWA</name>
 		<tooltiptext>Configure and view Netify FWA settings</tooltiptext>
-		<section>Services</section>
+		<section>Firewall</section>
 		<url>/netify-fwa/netify-fwa_status.php</url>
 	</menu>
 	<service>

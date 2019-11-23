@@ -5,7 +5,7 @@
 		<pkginfolink>https://www.netify.ai/resources/documentation/requirements</pkginfolink>
 		<descr><![CDATA[Netify Firewall Agent for pfSense.]]></descr>
 		<website>http://netify.ai/</website>
-		<category>Services</category>
+		<category>Firewall</category>
 		<version>%%PKGVERSION%%</version>
 		<status>Beta</status>
 		<configurationfile>netify-fwa.xml</configurationfile>

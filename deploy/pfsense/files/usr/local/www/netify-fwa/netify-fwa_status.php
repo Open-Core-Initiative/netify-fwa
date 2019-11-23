@@ -3,161 +3,154 @@ require_once('guiconfig.inc');
 require_once('/usr/local/pkg/netify-fwa/netify-fwa.inc');
 
 if ($_POST['status'] == 'update') {
-	$status = array(
-		'version' => NETIFY_FWA_VERSION,
-		'running' => netify_fwa_is_running(),
-		'status' => array()
-	);
+    $status = array(
+        'version' => NETIFY_FWA_VERSION,
+        'running' => netify_fwa_is_running(),
+        'status' => array()
+    );
 
-	if (file_exists(NETIFY_FWA_JSON_STATUS)) {
-		$status['status'] = json_decode(
-			file_get_contents(NETIFY_FWA_JSON_STATUS)
-		);
-	}
-	else {
-		$status['error'] = 'FWA status file not found.';
-	}
+    if (file_exists(NETIFY_FWA_JSON_STATUS)) {
+        $status['status'] = json_decode(
+            file_get_contents(NETIFY_FWA_JSON_STATUS)
+        );
+    }
+    else {
+        $status['error'] = 'FWA status file not found.';
+    }
 
-	$response = json_encode($status);
-	header('Content-Type: application/json');
-	header('Content-Length: ' . strlen($response));
+    $response = json_encode($status);
+    header('Content-Type: application/json');
+    header('Content-Length: ' . strlen($response));
 
-	echo json_encode($status);
+    echo json_encode($status);
 
-	exit;
+    exit;
 }
 
+$pgtitle = array(gettext('Firewall'), gettext('Netify FWA'), gettext('Status'));
+
 include("head.inc");
-$pgtitle = array(gettext('Services'), gettext('Netify FWA'), gettext('Status'));
 
 $tab_array = array();
 $tab_array[] = array(gettext("Status"), true, "/netify-fwa/netify-fwa_status.php");
+$tab_array[] = array(gettext("Applications"), false, "/netify-fwa/netify-fwa_apps.php");
+$tab_array[] = array(gettext("Protocols"), false, "/netify-fwa/netify-fwa_protos.php");
 
 display_top_tabs($tab_array, true);
 
 ?>
 
 <div class="panel panel-default">
-	<div class="panel-heading">
-		<h2 class="panel-title"><?=gettext("Netify FWA Status")?></h2>
-	</div>
-	<div class="panel-body">
-		<div class="content table-responsive">
-			<table id="maintable" class="table table-striped table-hover table-condensed">
-				<tr>
-					<th>Version</th>
-					<td id="fwa_version"></td>
-					<th>Status</th>
-					<td id="fwa_status">Unknown</td>
-				</tr>
-			</table>
-		</div>
-	</div>
+    <div class="panel-heading">
+        <h2 class="panel-title"><?=gettext("Netify FWA Status")?></h2>
+    </div>
+    <div class="panel-body">
+        <div class="content table-responsive">
+            <table id="maintable" class="table table-striped table-hover table-condensed">
+                <tr>
+                    <th><?=gettext("Version")?></th>
+                    <td id="fwa_version"></td>
+                    <th><?=gettext("Status")?></th>
+                    <td id="fwa_status">Unknown</td>
+                </tr>
+                <tr>
+                    <th><?=gettext("Active Flows")?></th>
+                    <td id="flows_active"></td>
+                    <th><?=gettext("Uptime")?></th>
+                    <td id="fwa_uptime">Unknown</td>
+                </tr>
+                <tr>
+                    <th><?=gettext("Recently Blocked")?></th>
+                    <td id="flows_blocked"></td>
+                    <th><?=gettext("Total Blocked")?></th>
+                    <td id="flows_blocked_total"></td>
+                </tr>
+            </table>
+        </div>
+    </div>
 </div>
 
 <script type="text/javascript">
 //<![CDATA[
 
-	function statusRequest() {
+    function statusRequest() {
 
-		$.ajax(
-			"<?=$_SERVER['SCRIPT_NAME'];?>",
-			{
-				type: 'post',
-				data: {
-					status: 'update'
-				},
-				success: statusUpdate,
-				complete: function() {
-					setTimeout(statusRequest, 2000);
-				}
-			}
-		);
-	}
+        $.ajax(
+            "<?=$_SERVER['SCRIPT_NAME'];?>",
+            {
+                type: 'post',
+                data: {
+                    status: 'update'
+                },
+                success: statusUpdate,
+                complete: function() {
+                    setTimeout(statusRequest, 2000);
+                }
+            }
+        );
+    }
 
-	function statusUpdate(responseData) {
-		/*
-		{
-		  "type": "agent_status",
-		  "timestamp": 1573494902,
-		  "uptime": 540,
-		  "flows": 55,
-		  "flows_prev": 35,
-		  "maxrss_kb": 42308,
-		  "maxrss_kb_prev": 42300,
-		  "dhc_status": true,
-		  "dhc_size": 16,
-		  "sink_status": true,
-		  "sink_queue_size_kb": 0,
-		  "sink_queue_max_size_kb": 2048,
-		  "sink_resp_code": 1
-		}
-		*/
-		console.log('statusUpdate:');
+    function uptime(seconds) {
+        var days = 0, hours = 0, minutes = 0;
 
-		for(var key in responseData.status) {
-			console.log(
-				'key: ' + key +
-				', value: ' + responseData.status[key]
-			);
-		}
-/*
-		$('#agent_version').html('v' + responseData.version);
-		$('#agent_status').html(responseData.running ? 'Running' : 'Stopped');
-		$('#agent_status').addClass(
-			responseData.running ? 'text-success' : 'text-danger'
-		);
-		$('#agent_status').removeClass(
-			responseData.running ? 'text-danger' : 'text-success'
-		);
-		var timestamp = new Date(responseData.status['timestamp'] * 1000);
-		$('#agent_timestamp').html(timestamp.toLocaleString());
-		$('#agent_uptime').html(uptime(responseData.status['uptime']));
-		$('#agent_sink_status').html(responseData.status['sink_status']);
-		$('#agent_sink_resp_code').html(responseData.status['sink_resp_code']);
-		var sink_queue_percentage =
-			responseData.status['sink_queue_size_kb'] * 100 /
-			responseData.status['sink_queue_max_size_kb'];
-		var sink_queue_percentage_options = {
-			'style': 'percent',
-			'minimumFractionDigits': 2,
-			'maximumFractionDigits': 2
-		};
-		$('#agent_sink_queue_size').html(
-			responseData.status['sink_queue_size_kb'].toLocaleString() + ' kB (' +
-			sink_queue_percentage.toLocaleString('en-US',
-				sink_queue_percentage_options) + ')'
-		);
-		$('#agent_sink_queue_size').addClass(
-			sink_queue_percentage < 50 ? 'text-success' : 'text-danger'
-		);
-		$('#agent_sink_queue_size').removeClass(
-			sink_queue_percentage >= 50 ? 'text-success' : 'text-danger'
-		);
-		$('#agent_sink_queue_max_size').html(
-			responseData.status['sink_queue_max_size_kb'].toLocaleString() + ' kB'
-		);
-		$('#agent_flows').html(responseData.status['flows'].toLocaleString());
-		$('#agent_flows_delta').html(
-			(responseData.status['flows'] - 
-			responseData.status['flows_prev']).toLocaleString()
-		);
-		$('#agent_maxrss').html(
-			responseData.status['maxrss_kb'].toLocaleString() + ' kB'
-		);
-		$('#agent_maxrss_delta').html(
-			(responseData.status['maxrss_kb'] - 
-			responseData.status['maxrss_kb_prev']).toLocaleString() +
-			' kB'
-		);
-		$('#agent_dhc_status').html(responseData.status['dhc_status']);
-		$('#agent_dhc_size').html(
-			responseData.status['dhc_size'].toLocaleString()
-		);
-*/
-	}
+        if (seconds >= 86400) {
+            days = Math.floor(seconds / 86400);
+            seconds -= days * 86400;
+        }
 
-	setTimeout(statusRequest, 1000);
+        if (seconds >= 3600) {
+            hours = Math.floor(seconds / 3600);
+            seconds -= hours * 3600;
+        }
+
+        if (seconds >= 60) {
+            minutes = Math.floor(seconds / 60);
+            seconds -= minutes * 60;
+        }
+
+        return days + 'd ' +
+            hours.toString().padStart(2, '0') + ':' +
+            minutes.toString().padStart(2, '0') + ':' +
+            seconds.toString().padStart(2, '0');
+    }
+
+    function statusUpdate(responseData) {
+        /*
+        {
+          "uptime": 12841,
+          "flows": 47,
+          "blocked": 0,
+          "prioritized": 0,
+          "blocked_total": 54,
+          "prioritized_total": 0
+        }
+        */
+        console.log('statusUpdate:');
+
+        for(var key in responseData.status) {
+            console.log(
+                'key: ' + key +
+                ', value: ' + responseData.status[key]
+            );
+        }
+
+        $('#fwa_version').html('v' + responseData.version);
+        $('#fwa_status').html(responseData.running ? 'Running' : 'Stopped');
+        $('#fwa_status').addClass(
+            responseData.running ? 'text-success' : 'text-danger'
+        );
+        $('#fwa_status').removeClass(
+            responseData.running ? 'text-danger' : 'text-success'
+        );
+        $('#flows_active').html(responseData.status['flows'].toLocaleString());
+        $('#fwa_uptime').html(uptime(responseData.status['uptime']));
+        $('#flows_blocked').html(responseData.status['blocked'].toLocaleString());
+        $('#flows_blocked_total').html(
+            responseData.status['blocked_total'].toLocaleString()
+        );
+    }
+
+    setTimeout(statusRequest, 1000);
 //]]>
 </script>
 
