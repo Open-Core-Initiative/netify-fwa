@@ -38,13 +38,9 @@ function netify_fwa_is_running() {
 }
 
 function netify_fwa_generate_filter_rules($type) {
-	$anchor = '';
-	switch ($type) {
-	case 'pfearly':
-		$anchor = "anchor \"nfa/*\"\n";
-		break;
-	}
-	return $anchor;
+    if ($type == 'pfearly')
+        return "anchor \"nfa/*\"\n";
+    return '';
 }
 
 function netify_fwa_package_sync() {

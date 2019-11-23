@@ -25,10 +25,9 @@ if (! defined('NETIFY_FWA_VOLATILE_STATEDIR'))
 	define('NETIFY_FWA_VOLATILE_STATEDIR', '/var/run/netify-fwa/');
 
 if (! defined('NETIFY_FWA_VERSION')) {
-//	$version = exec_command(NETIFY_FWA_SBINDIR .
-//		'netify-fwa --version 2>&1 | head -n 1 | cut -d\' \' -f2 | cut -d \'/\' -f2');
-//	define('NETIFY_FWA_VERSION', $version);
-	define('NETIFY_FWA_VERSION', '1.0.0.');
+	$version = exec_command(NETIFY_FWA_SBINDIR .
+		'netify-fwa --version 2>&1 | cut -dv -f2');
+	define('NETIFY_FWA_VERSION', $version);
 }
 
 if (! define('NETIFY_FWA_JSON_STATUS'))
