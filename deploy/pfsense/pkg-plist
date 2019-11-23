@@ -16,11 +16,14 @@ share/netify-fwa/nfa_fw_firewalld.py
 share/netify-fwa/nfa_fw_iptables.py
 share/netify-fwa/nfa_fw_pf.py
 share/netify-fwa/nfa_fw_pfsense.py
+share/netify-fwa/nfa_fw_global.py
 share/netify-fwa/nfa_ipset.py
 share/netify-fwa/nfa_main.py
 share/netify-fwa/nfa_netify_api.py
 share/netify-fwa/nfa_netifyd.py
 share/netify-fwa/nfa_rule.py
 share/netify-fwa/nfa_task.py
+share/netify-fwa/nfa_timer.py
+share/netify-fwa/nfa_util.py
 share/netify-fwa/nfa_version.py
 www/netify-fwa/netify-fwa_status.php
