@@ -296,13 +296,16 @@ def nfa_main():
 
 if __name__ == "__main__":
 
-    openlog('netify-fwa', nfa_global.log_options, LOG_DAEMON)
-    syslog("Netify FWA v%s started." %(NFA_VERSION))
-
     nfa_config_load()
 
     try:
-        params, args = getopt(sys.argv[1:], 'd', ('debug', 'save-default-config', 'help'))
+        params, args = getopt(sys.argv[1:],
+            'd', (
+                'debug',
+                'save-default-config',
+                'version',
+                'help')
+        )
     except GetoptError as e:
         print("Parameter error: %s" %(e.msg))
         print("Try option --help for usage information.")
@@ -315,6 +318,9 @@ if __name__ == "__main__":
             print("Generating default configuration file: %s" %(NFA_CONF))
             nfa_config.save_main(NFA_CONF, nfa_global.config)
             sys.exit(0)
+        elif option[0] == '--version':
+            print("Netify FWA v%s" %(NFA_VERSION))
+            sys.exit(0)
         elif option[0] == '--help':
             print("Netify FWA v%s" %(NFA_VERSION))
             sys.exit(0)
@@ -324,6 +330,9 @@ if __name__ == "__main__":
         openlog('netify-fwa', nfa_global.log_options, LOG_DAEMON)
         if not nfa_create_daemon():
             sys.exit(1)
+
+    openlog('netify-fwa', nfa_global.log_options, LOG_DAEMON)
+    syslog("Netify FWA v%s started." %(NFA_VERSION))
 
     signal(SIGALRM, nfa_signal_handler)
     signal(SIGHUP, nfa_signal_handler)
