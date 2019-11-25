@@ -22,14 +22,33 @@ if ($_POST['status'] == 'update') {
     header('Content-Type: application/json');
     header('Content-Length: ' . strlen($response));
 
-    echo json_encode($status);
+    echo $response;
+    exit;
+}
+else if ($_GET['update'] == 'blocks') {
+//    $test_data = array('data' => array());
 
+    $test_data = array('data' => array(
+        array('Facebook', 'Blocked', '10', 'Nov 25 10:51:45'),
+        array('Twitter', 'Blocked', '22', 'Nov 25 10:51:45'),
+        array('Google', 'Blocked', '310', 'Nov 25 10:51:45'),
+        array('HTTPS', 'Blocked', '34', 'Nov 25 10:51:45')
+    ));
+
+    $response = json_encode($test_data);
+    header('Content-Type: application/json');
+    header('Content-Length: ' . strlen($response));
+
+    echo $response;
     exit;
 }
 
 $pgtitle = array(gettext('Firewall'), gettext('Netify FWA'), gettext('Status'));
 
 include("head.inc");
+?>
+
+<?php
 
 $tab_array = array();
 $tab_array[] = array(gettext("Status"), true, "/netify-fwa/netify-fwa_status.php");
@@ -42,7 +61,7 @@ display_top_tabs($tab_array, true);
 
 <div class="panel panel-default">
     <div class="panel-heading">
-        <h2 class="panel-title"><?=gettext("Netify FWA Status")?></h2>
+        <h2 class="panel-title"><?=gettext("Netify Firewall Agent Status")?></h2>
     </div>
     <div class="panel-body">
         <div class="content table-responsive">
@@ -70,8 +89,54 @@ display_top_tabs($tab_array, true);
     </div>
 </div>
 
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?=gettext("Recent Activity")?></h2>
+    </div>
+    <div class="panel-body">
+        <div class="content table-responsive">
+            <table id="activitytable" class="table table-striped table-hover table-condensed">
+                <thead>
+                    <tr>
+                        <th><?=gettext("Application/Protocol")?></th>
+                        <th><?=gettext("Action")?></th>
+                        <th><?=gettext("Flows")?></th>
+                        <th><?=gettext("Last Event")?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<?php
+include("foot.inc");
+?>
+
+<link rel="stylesheet" type="text/css" href="./css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="./css/dataTables.fontAwesome.css">
+<script type="text/javascript" charset="utf8" src="./js/jquery.dataTables.min.js"></script>
+
 <script type="text/javascript">
 //<![CDATA[
+
+    var activityTable = undefined;
+
+    $(document).ready(function() {
+        activityTable = $('#activitytable').DataTable({
+            'dom': 'tipr',
+            'ajax': "<?=$_SERVER['SCRIPT_NAME'];?>?update=blocks",
+            'oLanguage': {
+                'sEmptyTable': "<?=gettext('No recent activty.')?>"
+            }
+        });
+
+        setInterval(function() {
+            activityTable.ajax.reload();
+        }, 8000);
+    });
 
     function statusRequest() {
 
@@ -153,7 +218,3 @@ display_top_tabs($tab_array, true);
     setTimeout(statusRequest, 1000);
 //]]>
 </script>
-
-<?php
-include("foot.inc");
-?>
