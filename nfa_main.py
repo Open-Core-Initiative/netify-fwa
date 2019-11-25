@@ -34,6 +34,7 @@ from syslog import \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
 import nfa_global
+import nfa_defaults
 import nfa_config
 import nfa_daemonize
 import nfa_netifyd
@@ -183,7 +184,7 @@ def nfa_process_agent_status(status):
 def nfa_create_daemon():
     try:
         nfa_daemonize.create(
-            pid_file=nfa_global.pid_file,
+            pid_file=nfa_defaults.NFA_PATH_PID,
             debug=nfa_global.debug
         )
     except BlockingIOError as e:

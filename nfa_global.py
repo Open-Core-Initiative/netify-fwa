@@ -18,8 +18,6 @@ from syslog import LOG_PID, LOG_PERROR
 
 debug = False
 
-pid_file = '/var/run/netify-fwa/netify-fwa.pid'
-
 fw = None
 fw_interfaces = { "internal": [], "external": [] }
 
@@ -41,5 +39,8 @@ stats = {
     'blocked': 0, 'prioritized': 0,
     'blocked_total': 0, 'prioritized_total': 0
 }
+
+matches = [
+]
 
 rx_app_id = None

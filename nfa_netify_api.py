@@ -28,6 +28,8 @@ def get(url):
         if nfa_global.should_terminate:
             return None
 
+        print("url: " + url)
+
         with urllib.request.urlopen(url) as ul:
             data = json.loads(ul.read().decode())
             #syslog(LOG_DEBUG str(data))
@@ -39,6 +41,8 @@ def get(url):
 
 def get_data(url):
     pages = []
+
+    url += '?settings_limit=100'
 
     data = get(url)
 
@@ -69,7 +73,7 @@ def get_data(url):
     if total_pages > 1:
         for page in range(2, total_pages + 1):
             syslog(LOG_DEBUG, "Get page: %d / %d..." %(page, total_pages))
-            data = get(url + '?page=' + str(page))
+            data = get(url + '&page=' + str(page))
 
             if data is None:
                 return None
