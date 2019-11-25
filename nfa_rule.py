@@ -39,9 +39,9 @@ def flow_matches(flow, rule):
     if app_match is not None:
         app_id = int(app_match.group())
 
-    if 'protocol' in rule and flow['detected_protocol'] != rule['protocol']:
+    if 'protocol' in rule and flow['detected_protocol'] != int(rule['protocol']):
         return False
-    if 'application' in rule and app_id != rule['application']:
+    if 'application' in rule and app_id != int(rule['application']):
         return False
 
     try:
@@ -49,13 +49,13 @@ def flow_matches(flow, rule):
             key = str(flow['detected_protocol'])
             if key not in nfa_global.config_cat_cache['protocols']:
                 return False
-            if nfa_global.config_cat_cache['protocols'][key] != rule['protocol_category']:
+            if nfa_global.config_cat_cache['protocols'][key] != int(rule['protocol_category']):
                 return False
         if 'application_category' in rule:
             key = str(app_id)
             if key not in nfa_global.config_cat_cache['applications']:
                 return False
-            if nfa_global.config_cat_cache['applications'][key] != rule['application_category']:
+            if nfa_global.config_cat_cache['applications'][key] != int(rule['application_category']):
                 return False
     except TypeError:
         return False
