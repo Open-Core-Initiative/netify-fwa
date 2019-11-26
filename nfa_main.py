@@ -232,6 +232,12 @@ def nfa_main():
         config_dynamic = nfa_global.config.get('netify-fwa', 'path-config-dynamic')
         wd = inotify.add_watch(config_dynamic, flags.CLOSE_WRITE | flags.MOVE_SELF | flags.MODIFY)
 
+    matches = nfa_config.load_matches(
+        nfa_global.config.get('netify-fwa', 'path-status-matches')
+    )
+
+    if matches is not None: nfa_global.matches = matches
+
     match_expire_timer = nfa_timer.timer(60, False)
     match_expire_timer.start()
 

@@ -66,10 +66,16 @@ class cat_update(threading.Thread):
         }
 
         if 'protocol_category' in pages_protocols[0]:
-            metadata['protocol_category'] = pages_protocols[0]['protocol_category'];
+            for i, entry in enumerate(pages_protocols[0]['protocol_category']):
+                metadata['protocol_category'][entry] = {
+                    'label': pages_protocols[0]['protocol_category'][entry]
+                }
 
         if 'application_category' in pages_applications[0]:
-            metadata['application_category'] = pages_applications[0]['application_category'];
+            for i, entry in enumerate(pages_applications[0]['application_category']):
+                metadata['application_category'][entry] = {
+                    'label': pages_applications[0]['application_category'][entry]
+                }
 
         proto_index = {}
 

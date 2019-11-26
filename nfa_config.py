@@ -120,18 +120,18 @@ def all_keys_exists(data, name, keys):
     return True
 
 def load_json(path):
-    config = None
+    data = None
     try:
         with open(path, 'r') as fd:
-            config = json.load(fd)
+            data = json.load(fd)
     except json.decoder.JSONDecodeError as e:
         syslog(LOG_WARNING,
-            "Configuration file is invalid: %s on line: %d, column: %d: %s"
+            "JSON file is invalid: %s on line: %d, column: %d: %s"
             %(e.msg, e.lineno, e.colno, path))
     except FileNotFoundError as e:
-        syslog(LOG_WARNING, "Configuration file not found: %s" %(path))
+        syslog(LOG_WARNING, "JSON file not found: %s" %(path))
 
-    return config
+    return data
 
 def load_dynamic(path):
     config = load_json(path)
@@ -196,9 +196,8 @@ def load_dynamic(path):
     return config
 
 def load_cat_index(path):
-    config = load_json(path)
+    return load_json(path)
 
-    if config is None:
-        return None
-
-    return config
+def load_matches(path):
+    return load_json(path)
+        

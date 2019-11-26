@@ -31,12 +31,21 @@ if (! defined('NETIFY_FWA_VERSION')) {
     define('NETIFY_FWA_VERSION', $version);
 }
 
+if (! define('NETIFY_FWA_JSON_RULES'))
+    define('NETIFY_FWA_JSON_RULES', NETIFY_FWA_CONFDIR . 'netify-fwa.json');
+
 if (! define('NETIFY_FWA_JSON_APP_PROTO_DATA'))
-    define('NETIFY_FWA_JSON_APP_PROTO_DATA', NETIFY_FWA_CONFDIR. '/app-proto-data.json');
+    define('NETIFY_FWA_JSON_APP_PROTO_DATA', NETIFY_FWA_CONFDIR . 'app-proto-data.json');
 
 if (! define('NETIFY_FWA_JSON_STATUS'))
-    define('NETIFY_FWA_JSON_STATUS', NETIFY_FWA_VOLATILE_STATEDIR . '/status.json');
+    define('NETIFY_FWA_JSON_STATUS', NETIFY_FWA_VOLATILE_STATEDIR . 'status.json');
 
 if (! define('NETIFY_FWA_JSON_STATUS_MATCHES'))
-    define('NETIFY_FWA_JSON_STATUS_MATCHES', NETIFY_FWA_VOLATILE_STATEDIR . '/matches.json');
+    define('NETIFY_FWA_JSON_STATUS_MATCHES', NETIFY_FWA_VOLATILE_STATEDIR . 'matches.json');
+
+if (! define('NETIFY_FWA_WWWDIR'))
+    define('NETIFY_FWA_WWWDIR', NETIFY_FWA_PREFIX . 'www/netify-fwa/');
+
+if (! define('NETIFY_FWA_WWW_ICONS'))
+    define('NETIFY_FWA_WWW_ICONS', NETIFY_FWA_WWWDIR. 'icons/');
 ?>

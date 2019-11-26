@@ -61,12 +61,12 @@ else if ($_GET['update'] == 'blocks') {
                     $ids[] = $app_proto_data['protocols'][$match['protocol']]['label'];
                 if ($match['application'] > 0) {
                     $ids[] = $app_proto_data['applications'][$match['application']]['label'];
-                    $icon = $app_proto_data['applications'][$match['application']]['icon'];
+                    $icon = netify_fwa_load_icon($app_proto_data['applications'][$match['application']]['icon']);
                 }
                 if ($match['protocol_category'] > 0)
-                    $ids[] = $app_proto_data['protocol_category'][$match['protocol_category']];
+                    $ids[] = $app_proto_data['protocol_category'][$match['protocol_category']]['label'];
                 if ($match['application_category'] > 0)
-                    $ids[] = $app_proto_data['application_category'][$match['application_category']];
+                    $ids[] = $app_proto_data['application_category'][$match['application_category']]['label'];
 
                 $entry = array(
                     $icon,
@@ -102,6 +102,7 @@ $tab_array = array();
 $tab_array[] = array(gettext("Status"), true, "/netify-fwa/netify-fwa_status.php");
 $tab_array[] = array(gettext("Applications"), false, "/netify-fwa/netify-fwa_apps.php");
 $tab_array[] = array(gettext("Protocols"), false, "/netify-fwa/netify-fwa_protos.php");
+$tab_array[] = array(gettext("Whitelist"), false, "/netify-fwa/netify-fwa_whitelist.php");
 
 display_top_tabs($tab_array, true);
 
@@ -146,7 +147,7 @@ display_top_tabs($tab_array, true);
             <table id="activitytable" class="table table-striped table-hover table-condensed">
                 <thead>
                     <tr>
-                        <th></th>
+                        <th style="width: 1%;"></th>
                         <th><?=gettext("Application/Protocol")?></th>
                         <th><?=gettext("Action")?></th>
                         <th><?=gettext("Flows")?></th>
@@ -178,10 +179,10 @@ include("foot.inc");
             'dom': 'tipr',
             'columnDefs': [{
                 'targets': 0,
-                'width': '1%',
+                'orderable': false,
                 'render': function(data, type, row, meta) {
                     if (data.length > 0)
-                        return '<img src="' + data + '" style="width: 1.5em; float: right;">';
+                        return '<img src="' + data + '" style="width: 1.5em;">';
                     else
                         return '&nbsp;'
                 }

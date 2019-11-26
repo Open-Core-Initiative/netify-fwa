@@ -85,7 +85,11 @@ class netifyd:
         if not len(rd):
             return jd
 
-        data = self.fh.readline()
+        try:
+            data = self.fh.readline()
+        except:
+            return None
+
         if not data:
             return None
 
