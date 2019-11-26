@@ -22,8 +22,9 @@ from syslog import \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
 from nfa_defaults import \
-        NFA_CONF_DYNAMIC, NFA_PATH_STATUS, NFA_PATH_CATEGORIES, NFA_URI_SOCKET, \
-        NFA_URI_API, NFA_TTL_MATCH, NFA_TTL_CATEGORY_CACHE
+        NFA_CONF_DYNAMIC, NFA_PATH_STATUS, NFA_PATH_STATUS_MATCHES, \
+        NFA_PATH_CATEGORIES, NFA_URI_SOCKET, NFA_URI_API, NFA_TTL_MATCH, \
+        NFA_TTL_CATEGORY_INDEX
 
 from nfa_version import NFA_JSON_CONFIG_VERSION
 
@@ -38,6 +39,7 @@ def create_main():
     config.set('netify-fwa', 'mark-mask', '0xf00000')
     config.set('netify-fwa', 'path-config-dynamic', NFA_CONF_DYNAMIC)
     config.set('netify-fwa', 'path-status', NFA_PATH_STATUS)
+    config.set('netify-fwa', 'path-status-matches', NFA_PATH_STATUS_MATCHES)
     config.set('netify-fwa', 'ttl-match', '%d' %(NFA_TTL_MATCH))
 
     config.add_section('firewalld')
@@ -55,8 +57,8 @@ def create_main():
     config.set('netify-agent', 'socket-uri', NFA_URI_SOCKET)
 
     config.add_section('netify-api')
-    config.set('netify-api', 'path-category-cache', NFA_PATH_CATEGORIES)
-    config.set('netify-api', 'ttl-category-cache', '%d' %(NFA_TTL_CATEGORY_CACHE))
+    config.set('netify-api', 'path-category-index', NFA_PATH_CATEGORIES)
+    config.set('netify-api', 'ttl-category-index', '%d' %(NFA_TTL_CATEGORY_INDEX))
     config.set('netify-api', 'url', NFA_URI_API)
 
     return config
@@ -192,7 +194,7 @@ def load_dynamic(path):
 
     return config
 
-def load_cat_cache(path):
+def load_cat_index(path):
     config = load_json(path)
 
     if config is None:

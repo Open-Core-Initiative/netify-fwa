@@ -35,8 +35,8 @@ class cat_update(threading.Thread):
         super().__init__()
 
     def run(self):
-        pages_protocols = ()
-        pages_applications = ()
+        pages_protocols = []
+        pages_applications = []
 
         url_api = self.config.get('netify-api', 'url')
 
@@ -54,6 +54,7 @@ class cat_update(threading.Thread):
 
             if pages_applications is None or nfa_global.should_terminate:
                 return
+
         except socket.gaierror as e:
             syslog(LOG_WARNING,
                 "Netify API request failed: %s: %s [%d]" %(url_api, e.errstr, e.errno))
@@ -61,7 +62,7 @@ class cat_update(threading.Thread):
 
         protocols = {}
 
-        for page in pages_protocols:
+        for page in pages_protocols[1]:
             for proto in page:
                 if 'id' not in proto:
                     break
@@ -72,11 +73,11 @@ class cat_update(threading.Thread):
 
                 protocols[proto['id']] = proto['protocol_category']['id'];
 
-        syslog(LOG_DEBUG, "Indexed category cache for %d protocols." %(len(protocols)))
+        syslog(LOG_DEBUG, "Indexed %d protocol categories." %(len(protocols)))
 
         applications = {}
 
-        for page in pages_applications:
+        for page in pages_applications[1]:
             for app in page:
                 if 'id' not in app:
                     break
@@ -87,20 +88,20 @@ class cat_update(threading.Thread):
 
                 applications[app['id']] = app['application_category']['id'];
 
-        syslog(LOG_DEBUG, "Indexed category cache for %d applications." %(len(applications)))
+        syslog(LOG_DEBUG, "Indexed %d application categories." %(len(applications)))
 
         data = { 'protocols': protocols, 'applications': applications }
 
-        path_cat_cache = self.config.get('netify-api', 'path-category-cache')
+        path_cat_index = self.config.get('netify-api', 'path-category-index')
 
         try:
-            with open(path_cat_cache, 'w') as fh:
+            with open(path_cat_index, 'w') as fh:
                 json.dump(data, fh)
         except FileNotFoundError as e:
-            syslog(LOG_ERR, "Error saving category cache: %s: File not found." %(path_cat_cache))
+            syslog(LOG_ERR, "Error saving category cache: %s: File not found." %(path_cat_index))
             return
         except IOError as e:
-            syslog(LOG_ERR, "Error saving category cache: %s" %(path_cat_cache))
+            syslog(LOG_ERR, "Error saving category cache: %s" %(path_cat_index))
             return
 
         self.exit_success = True

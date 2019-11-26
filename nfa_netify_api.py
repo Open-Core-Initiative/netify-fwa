@@ -40,6 +40,7 @@ def get(url):
         return None
 
 def get_data(url):
+    options = []
     pages = []
 
     url += '?settings_limit=100'
@@ -65,6 +66,9 @@ def get_data(url):
 
     total_pages = data_info['total_pages']
 
+    if 'data_options' in data:
+        options = data['data_options']
+
     if 'data' not in data:
         return None
 
@@ -89,4 +93,4 @@ def get_data(url):
 
             pages.append(data['data'])
 
-    return pages
+    return [ options, pages ]

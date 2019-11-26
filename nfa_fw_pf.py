@@ -314,7 +314,22 @@ class nfa_fw_pf():
     # Remove hooks
 
     def remove_hooks(self):
-        pass
+        anchors = self.anchor_list()
+
+        for anchor in anchors:
+            self.anchor_flush(anchor)
+
+            if anchor == 'nfa/00_whitelist':
+                self.table_flush(anchor, 'nfa_whitelist')
+                self.kill_state_by_label(anchor, 'nfa_whitelist')
+                continue
+
+            self.table_flush(anchor, 'nfa_local')
+            self.table_flush(anchor, 'nfa_remote')
+            self.table_kill(anchor, 'nfa_local')
+            self.table_kill(anchor, 'nfa_remote')
+
+            self.kill_state_by_label(anchor, 'nfa_block')
 
     # Test
 

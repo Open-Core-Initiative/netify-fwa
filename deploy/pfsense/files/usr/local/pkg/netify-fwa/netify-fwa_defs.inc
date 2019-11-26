@@ -32,4 +32,7 @@ if (! defined('NETIFY_FWA_VERSION')) {
 
 if (! define('NETIFY_FWA_JSON_STATUS'))
 	define('NETIFY_FWA_JSON_STATUS', NETIFY_FWA_VOLATILE_STATEDIR . '/status.json');
+
+if (! define('NETIFY_FWA_JSON_STATUS_MATCHES'))
+	define('NETIFY_FWA_JSON_STATUS_MATCHES', NETIFY_FWA_VOLATILE_STATEDIR . '/matches.json');
 ?>

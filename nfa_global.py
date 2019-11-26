@@ -27,7 +27,7 @@ expire_matches = False
 
 config = None
 config_dynamic = None
-config_cat_cache = None
+config_cat_index = None
 
 log_options = LOG_PID | LOG_PERROR
 
@@ -40,7 +40,6 @@ stats = {
     'blocked_total': 0, 'prioritized_total': 0
 }
 
-matches = [
-]
+matches = []
 
 rx_app_id = None

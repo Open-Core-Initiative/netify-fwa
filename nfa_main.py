@@ -42,7 +42,7 @@ import nfa_task
 import nfa_rule
 import nfa_timer
 
-from nfa_defaults import NFA_CONF
+from nfa_defaults import NFA_CONF, NFA_MAX_MATCH_HISTORY
 from nfa_version import NFA_VERSION
 
 def nfa_signal_handler(signum, frame):
@@ -86,12 +86,12 @@ def nfa_config_reload():
 
     nfa_global.config_reload = False
 
-def nfa_cat_cache_refresh(config_cat_cache, ttl_cat_cache):
+def nfa_cat_index_refresh(config_cat_index, ttl_cat_index):
 
-    if not os.path.isfile(config_cat_cache) or \
-        int(os.path.getmtime(config_cat_cache)) + int(ttl_cat_cache) < int(time.time()):
+    if not os.path.isfile(config_cat_index) or \
+        int(os.path.getmtime(config_cat_index)) + int(ttl_cat_index) < int(time.time()):
 
-        syslog(LOG_DEBUG, "Updating category cache...")
+        syslog(LOG_DEBUG, "Updating category index...")
 
         task_cat_update = nfa_task.cat_update(nfa_global.config)
         task_cat_update.start()
@@ -100,20 +100,20 @@ def nfa_cat_cache_refresh(config_cat_cache, ttl_cat_cache):
 
     return None
 
-def nfa_cat_cache_reload(config_cat_cache, task_cat_update):
+def nfa_cat_index_reload(config_cat_index, task_cat_update):
 
     if not task_cat_update.is_alive():
 
         task_cat_update.join()
 
         if not task_cat_update.exit_success:
-            syslog(LOG_DEBUG, "Failed to update category cache.")
+            syslog(LOG_DEBUG, "Failed to update category index.")
         else:
-            cat_cache = nfa_config.load_cat_cache(config_cat_cache)
+            cat_index = nfa_config.load_cat_index(config_cat_index)
 
-            if cat_cache is not None:
-                syslog("Reloaded category cache.")
-                nfa_global.config_cat_cache = cat_cache
+            if cat_index is not None:
+                syslog("Reloaded category index.")
+                nfa_global.config_cat_index = cat_index
 
         return None
 
@@ -181,6 +181,17 @@ def nfa_process_agent_status(status):
     nfa_global.stats['blocked'] = 0
     nfa_global.stats['prioritized'] = 0
 
+    while len(nfa_global.matches) > NFA_MAX_MATCH_HISTORY:
+        nfa_global.matches.pop()
+
+    matches = nfa_global.config.get('netify-fwa', 'path-status-matches')
+
+    try:
+        with open(matches, 'w') as fh:
+            json.dump(nfa_global.matches, fh)
+    except:
+        syslog(LOG_ERR, "Unable to update matches status file: %s" %(matches))
+
 def nfa_create_daemon():
     try:
         nfa_daemonize.create(
@@ -205,13 +216,13 @@ def nfa_main():
     fh = None
     nd = nfa_netifyd.netifyd()
 
-    task_cat_cache_update = None
+    task_cat_index_update = None
 
-    config_cat_cache = nfa_global.config.get('netify-api', 'path-category-cache')
-    ttl_cat_cache = nfa_global.config.get('netify-api', 'ttl-category-cache')
+    config_cat_index = nfa_global.config.get('netify-api', 'path-category-index')
+    ttl_cat_index = nfa_global.config.get('netify-api', 'ttl-category-index')
 
-    if os.path.isfile(config_cat_cache):
-        nfa_global.config_cat_cache = nfa_config.load_cat_cache(config_cat_cache)
+    if os.path.isfile(config_cat_index):
+        nfa_global.config_cat_index = nfa_config.load_cat_index(config_cat_index)
 
     wd = None
     if nfa_global.fw.flavor == 'iptables':
@@ -243,11 +254,11 @@ def nfa_main():
                 nd.close()
                 fh = None
 
-        if task_cat_cache_update is None:
-            task_cat_cache_update = nfa_cat_cache_refresh(config_cat_cache, ttl_cat_cache)
+        if task_cat_index_update is None:
+            task_cat_index_update = nfa_cat_index_refresh(config_cat_index, ttl_cat_index)
 
-        if task_cat_cache_update is not None:
-            task_cat_cache_update = nfa_cat_cache_reload(config_cat_cache, task_cat_cache_update)
+        if task_cat_index_update is not None:
+            task_cat_index_update = nfa_cat_index_reload(config_cat_index, task_cat_index_update)
 
         if nfa_global.expire_matches:
             nfa_global.fw.expire_matches()

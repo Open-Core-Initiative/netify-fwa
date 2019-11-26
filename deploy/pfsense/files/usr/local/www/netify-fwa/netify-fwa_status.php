@@ -26,16 +26,55 @@ if ($_POST['status'] == 'update') {
     exit;
 }
 else if ($_GET['update'] == 'blocks') {
-//    $test_data = array('data' => array());
+/*
+  {
+    "timestamp": 1574718115,
+    "type": "block",
+    "protocol": 0,
+    "application": 119,
+    "protocol_category": 0,
+    "application_category": 0,
+    "flows": 1
+  }
+*/
+    $entries = array();
 
-    $test_data = array('data' => array(
-        array('Facebook', 'Blocked', '10', 'Nov 25 10:51:45'),
-        array('Twitter', 'Blocked', '22', 'Nov 25 10:51:45'),
-        array('Google', 'Blocked', '310', 'Nov 25 10:51:45'),
-        array('HTTPS', 'Blocked', '34', 'Nov 25 10:51:45')
-    ));
+    if (file_exists(NETIFY_FWA_JSON_STATUS_MATCHES)) {
 
-    $response = json_encode($test_data);
+        $entries = array();
+        $matches = json_decode(
+            file_get_contents(NETIFY_FWA_JSON_STATUS_MATCHES), true
+        );
+
+        if ($matches !== false) {
+
+            foreach ($matches as $match) {
+
+                $ids = array();
+                if ($match['protocol'] > 0)
+                    $ids[] = $match['protocol'];
+                if ($match['application'] > 0)
+                    $ids[] = $match['application'];
+                if ($match['protocol_category'] > 0)
+                    $ids[] = $match['protocol_category'];
+                if ($match['application_category'] > 0)
+                    $ids[] = $match['application_category'];
+
+                $entry = array(
+                    implode('/', $ids),
+                    ucwords($match['type']),
+                    number_format($match['flows']),
+                    strftime('%x %X', $match['timestamp'])
+                );
+
+                $entries[] = $entry;
+            }
+        }
+    }
+
+    $data = array('data' => $entries);
+
+    $response = json_encode($data);
     header('Content-Type: application/json');
     header('Content-Length: ' . strlen($response));
 
@@ -61,7 +100,7 @@ display_top_tabs($tab_array, true);
 
 <div class="panel panel-default">
     <div class="panel-heading">
-        <h2 class="panel-title"><?=gettext("Netify Firewall Agent Status")?></h2>
+        <h2 class="panel-title"><?=gettext("Netify Firewall Agent")?></h2>
     </div>
     <div class="panel-body">
         <div class="content table-responsive">
@@ -127,6 +166,7 @@ include("foot.inc");
     $(document).ready(function() {
         activityTable = $('#activitytable').DataTable({
             'dom': 'tipr',
+            'order': [[ 3, 'desc' ], [ 0, 'asc' ]],
             'ajax': "<?=$_SERVER['SCRIPT_NAME'];?>?update=blocks",
             'oLanguage': {
                 'sEmptyTable': "<?=gettext('No recent activty.')?>"
