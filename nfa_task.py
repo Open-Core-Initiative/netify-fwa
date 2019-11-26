@@ -60,7 +60,18 @@ class cat_update(threading.Thread):
                 "Netify API request failed: %s: %s [%d]" %(url_api, e.errstr, e.errno))
             return
 
-        protocols = {}
+        metadata = {
+            'applications': {}, 'protocols': {},
+            'application_category': {}, 'protocol_category': {}
+        }
+
+        if 'protocol_category' in pages_protocols[0]:
+            metadata['protocol_category'] = pages_protocols[0]['protocol_category'];
+
+        if 'application_category' in pages_applications[0]:
+            metadata['application_category'] = pages_applications[0]['application_category'];
+
+        proto_index = {}
 
         for page in pages_protocols[1]:
             for proto in page:
@@ -71,11 +82,15 @@ class cat_update(threading.Thread):
                 if 'id' not in proto['protocol_category']:
                     break
 
-                protocols[proto['id']] = proto['protocol_category']['id'];
+                proto_index[proto['id']] = proto['protocol_category']['id'];
 
-        syslog(LOG_DEBUG, "Indexed %d protocol categories." %(len(protocols)))
+                metadata['protocols'][proto['id']] = {
+                    'label': proto['label'],
+                }
 
-        applications = {}
+        syslog(LOG_DEBUG, "Indexed %d protocol categories." %(len(proto_index)))
+
+        app_index = {}
 
         for page in pages_applications[1]:
             for app in page:
@@ -86,11 +101,16 @@ class cat_update(threading.Thread):
                 if 'id' not in app['application_category']:
                     break
 
-                applications[app['id']] = app['application_category']['id'];
+                app_index[app['id']] = app['application_category']['id'];
 
-        syslog(LOG_DEBUG, "Indexed %d application categories." %(len(applications)))
+                metadata['applications'][app['id']] = {
+                    'label': app['label'],
+                    'icon': app['favicon']
+                }
 
-        data = { 'protocols': protocols, 'applications': applications }
+        syslog(LOG_DEBUG, "Indexed %d application categories." %(len(app_index)))
+
+        data = { 'protocols': proto_index, 'applications': app_index}
 
         path_cat_index = self.config.get('netify-api', 'path-category-index')
 
@@ -98,10 +118,22 @@ class cat_update(threading.Thread):
             with open(path_cat_index, 'w') as fh:
                 json.dump(data, fh)
         except FileNotFoundError as e:
-            syslog(LOG_ERR, "Error saving category cache: %s: File not found." %(path_cat_index))
+            syslog(LOG_ERR, "Error saving categories index: %s: File not found." %(path_cat_index))
             return
         except IOError as e:
-            syslog(LOG_ERR, "Error saving category cache: %s" %(path_cat_index))
+            syslog(LOG_ERR, "Error saving categories index: %s" %(path_cat_index))
+            return
+
+        path_app_proto_data = self.config.get('netify-api', 'path-app-proto-data')
+
+        try:
+            with open(path_app_proto_data, 'w') as fh:
+                json.dump(metadata, fh)
+        except FileNotFoundError as e:
+            syslog(LOG_ERR, "Error saving application/protocol metadata: %s: File not found." %(path_app_proto_data))
+            return
+        except IOError as e:
+            syslog(LOG_ERR, "Error saving application/protocol metadata: %s" %(path_app_proto_data))
             return
 
         self.exit_success = True

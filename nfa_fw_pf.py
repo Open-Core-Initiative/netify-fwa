@@ -290,6 +290,8 @@ class nfa_fw_pf():
 
             nfa_global.stats['blocked'] += 1
 
+            break
+
     # Expire matches
 
     def expire_matches(self):

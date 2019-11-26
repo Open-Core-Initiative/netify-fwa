@@ -13,26 +13,30 @@
  */
 
 if (! defined('NETIFY_FWA_PREFIX'))
-	define('NETIFY_FWA_PREFIX', '/usr/local/');
+    define('NETIFY_FWA_PREFIX', '/usr/local/');
 
 if (! defined('NETIFY_FWA_SBINDIR'))
-	define('NETIFY_FWA_SBINDIR', NETIFY_FWA_PREFIX . 'sbin/');
+    define('NETIFY_FWA_SBINDIR', NETIFY_FWA_PREFIX . 'sbin/');
 
 if (! defined('NETIFY_FWA_CONFDIR'))
-	define('NETIFY_FWA_CONFDIR', NETIFY_FWA_PREFIX . 'etc/netify-fwa/');
+    define('NETIFY_FWA_CONFDIR', NETIFY_FWA_PREFIX . 'etc/netify-fwa/');
 
 if (! defined('NETIFY_FWA_VOLATILE_STATEDIR'))
-	define('NETIFY_FWA_VOLATILE_STATEDIR', '/var/run/netify-fwa/');
+    define('NETIFY_FWA_VOLATILE_STATEDIR', '/var/run/netify-fwa/');
 
 if (! defined('NETIFY_FWA_VERSION')) {
-	$version = exec_command(NETIFY_FWA_SBINDIR .
-		'netify-fwa --version 2>&1 | cut -dv -f2');
-	define('NETIFY_FWA_VERSION', $version);
+    $version = exec_command(
+        NETIFY_FWA_SBINDIR . 'netify-fwa --version 2>&1 | cut -dv -f2'
+    );
+    define('NETIFY_FWA_VERSION', $version);
 }
 
+if (! define('NETIFY_FWA_JSON_APP_PROTO_DATA'))
+    define('NETIFY_FWA_JSON_APP_PROTO_DATA', NETIFY_FWA_CONFDIR. '/app-proto-data.json');
+
 if (! define('NETIFY_FWA_JSON_STATUS'))
-	define('NETIFY_FWA_JSON_STATUS', NETIFY_FWA_VOLATILE_STATEDIR . '/status.json');
+    define('NETIFY_FWA_JSON_STATUS', NETIFY_FWA_VOLATILE_STATEDIR . '/status.json');
 
 if (! define('NETIFY_FWA_JSON_STATUS_MATCHES'))
-	define('NETIFY_FWA_JSON_STATUS_MATCHES', NETIFY_FWA_VOLATILE_STATEDIR . '/matches.json');
+    define('NETIFY_FWA_JSON_STATUS_MATCHES', NETIFY_FWA_VOLATILE_STATEDIR . '/matches.json');
 ?>

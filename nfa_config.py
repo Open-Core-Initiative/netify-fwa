@@ -23,8 +23,8 @@ from syslog import \
 
 from nfa_defaults import \
         NFA_CONF_DYNAMIC, NFA_PATH_STATUS, NFA_PATH_STATUS_MATCHES, \
-        NFA_PATH_CATEGORIES, NFA_URI_SOCKET, NFA_URI_API, NFA_TTL_MATCH, \
-        NFA_TTL_CATEGORY_INDEX
+        NFA_PATH_APP_PROTO_DATA, NFA_PATH_CATEGORIES, NFA_URI_SOCKET, \
+        NFA_URI_API, NFA_TTL_MATCH, NFA_TTL_CATEGORY_INDEX
 
 from nfa_version import NFA_JSON_CONFIG_VERSION
 
@@ -57,6 +57,7 @@ def create_main():
     config.set('netify-agent', 'socket-uri', NFA_URI_SOCKET)
 
     config.add_section('netify-api')
+    config.set('netify-api', 'path-app-proto-data', NFA_PATH_APP_PROTO_DATA)
     config.set('netify-api', 'path-category-index', NFA_PATH_CATEGORIES)
     config.set('netify-api', 'ttl-category-index', '%d' %(NFA_TTL_CATEGORY_INDEX))
     config.set('netify-api', 'url', NFA_URI_API)

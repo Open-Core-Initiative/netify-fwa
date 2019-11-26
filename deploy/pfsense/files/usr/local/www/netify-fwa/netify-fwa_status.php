@@ -41,6 +41,10 @@ else if ($_GET['update'] == 'blocks') {
 
     if (file_exists(NETIFY_FWA_JSON_STATUS_MATCHES)) {
 
+        $app_proto_data = json_decode(
+            file_get_contents(NETIFY_FWA_JSON_APP_PROTO_DATA), true
+        );
+
         $entries = array();
         $matches = json_decode(
             file_get_contents(NETIFY_FWA_JSON_STATUS_MATCHES), true
@@ -50,17 +54,22 @@ else if ($_GET['update'] == 'blocks') {
 
             foreach ($matches as $match) {
 
+                $icon = '';
                 $ids = array();
+
                 if ($match['protocol'] > 0)
-                    $ids[] = $match['protocol'];
-                if ($match['application'] > 0)
-                    $ids[] = $match['application'];
+                    $ids[] = $app_proto_data['protocols'][$match['protocol']]['label'];
+                if ($match['application'] > 0) {
+                    $ids[] = $app_proto_data['applications'][$match['application']]['label'];
+                    $icon = $app_proto_data['applications'][$match['application']]['icon'];
+                }
                 if ($match['protocol_category'] > 0)
-                    $ids[] = $match['protocol_category'];
+                    $ids[] = $app_proto_data['protocol_category'][$match['protocol_category']];
                 if ($match['application_category'] > 0)
-                    $ids[] = $match['application_category'];
+                    $ids[] = $app_proto_data['application_category'][$match['application_category']];
 
                 $entry = array(
+                    $icon,
                     implode('/', $ids),
                     ucwords($match['type']),
                     number_format($match['flows']),
@@ -137,6 +146,7 @@ display_top_tabs($tab_array, true);
             <table id="activitytable" class="table table-striped table-hover table-condensed">
                 <thead>
                     <tr>
+                        <th></th>
                         <th><?=gettext("Application/Protocol")?></th>
                         <th><?=gettext("Action")?></th>
                         <th><?=gettext("Flows")?></th>
@@ -166,7 +176,18 @@ include("foot.inc");
     $(document).ready(function() {
         activityTable = $('#activitytable').DataTable({
             'dom': 'tipr',
-            'order': [[ 3, 'desc' ], [ 0, 'asc' ]],
+            'columnDefs': [{
+                'targets': 0,
+                'width': '1%',
+                'render': function(data, type, row, meta) {
+                    if (data.length > 0)
+                        return '<img src="' + data + '" style="width: 1.5em; float: right;">';
+                    else
+                        return '&nbsp;'
+                }
+            }],
+            'order': [[ 4, 'desc' ], [ 1, 'asc' ]],
+            'pageLength': 25,
             'ajax': "<?=$_SERVER['SCRIPT_NAME'];?>?update=blocks",
             'oLanguage': {
                 'sEmptyTable': "<?=gettext('No recent activty.')?>"
