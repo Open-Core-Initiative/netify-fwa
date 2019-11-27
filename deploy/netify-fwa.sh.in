@@ -13,4 +13,4 @@ if [ -z "$PYTHON" ]; then
     exit 1
 fi
 
-exec env $PYTHON -Es @sharedatadir@/nfa_main.py $@
+exec $PYTHON -Es @sharedatadir@/nfa_main.py $@
