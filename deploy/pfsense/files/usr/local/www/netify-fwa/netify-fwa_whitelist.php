@@ -60,6 +60,10 @@ else if (array_key_exists('rules', $_GET)) {
             'type="button" title="%s">%s</button>',
             $btn_id, $btn_class, $btn_tooltip, $btn_text
         );
+//        return sprintf('<button id="%s" class="btn %s" ' .
+//            'type="button" title="%s"><i class="fa fa-trash"></i></button>',
+//            $btn_id, $btn_class, $btn_tooltip
+//        );
     }
 
     foreach ($whitelist as $id => $entry) {
@@ -130,8 +134,10 @@ display_top_tabs($tab_array, true);
                     </tr>
                     <tr>
                         <td style="vertical-align: bottom;"><input id="whitelist-address" type="text" class="form-control"></input></td>
-                        <td style="width: 1%; padding-right: 0.6em;">
-                            <button id="btn-whitelist-add" type="button" class="btn btn-success" style="width: 5em;"><?=gettext("Add");?></button>
+                        <td style="width: 1%; padding-right: 0.5em;">
+                            <button id="btn-whitelist-add" type="button" class="btn btn-success" style="width: 5em;">
+                                <i class="fa fa-plus icon-embed-btn"></i><?=gettext("Add");?>
+                            </button>
                         </td>
                     </tr>
                 </tbody>
