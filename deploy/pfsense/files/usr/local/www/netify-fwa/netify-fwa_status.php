@@ -197,7 +197,7 @@ include("foot.inc");
 
         setInterval(function() {
             activityTable.ajax.reload(null, false);
-        }, 8000);
+        }, 7250);
     });
 
     function statusRequest() {
