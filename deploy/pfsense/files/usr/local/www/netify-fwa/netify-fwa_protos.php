@@ -92,7 +92,7 @@ else if (array_key_exists('rules', $_GET)) {
     exit;
 }
 
-$pgtitle = array(gettext('Firewall'), gettext('Netify FWA'), gettext('Applications'));
+$pgtitle = array(gettext('Firewall'), gettext('Netify FWA'), gettext('Protocols'));
 
 include("head.inc");
 ?>
@@ -111,7 +111,7 @@ display_top_tabs($tab_array, true);
 
 <div class="panel panel-default">
     <div class="panel-heading">
-        <h2 class="panel-title"><?=gettext("Applications")?></h2>
+        <h2 class="panel-title"><?=gettext("Protocols")?></h2>
     </div>
     <div class="panel-body">
         <div class="content table-responsive">
@@ -119,7 +119,7 @@ display_top_tabs($tab_array, true);
                 <thead>
                     <tr>
                         <th style="width: 1%;"></th>
-                        <th><?=gettext("Application")?></th>
+                        <th><?=gettext("Protocols")?></th>
                         <th style="width: 1%;"><?=gettext("Action")?></th>
                     </tr>
                 </thead>
@@ -132,7 +132,7 @@ display_top_tabs($tab_array, true);
 
 <div class="panel panel-default">
     <div class="panel-heading">
-        <h2 class="panel-title"><?=gettext("Application Categories")?></h2>
+        <h2 class="panel-title"><?=gettext("Protocol Categories")?></h2>
     </div>
     <div class="panel-body">
         <div class="content table-responsive">
