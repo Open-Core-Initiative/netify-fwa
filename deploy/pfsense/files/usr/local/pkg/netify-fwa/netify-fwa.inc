@@ -20,7 +20,8 @@ require_once("service-utils.inc");
 
 require_once("/usr/local/pkg/netify-fwa/netify-fwa_defs.inc");
 
-function netify_fwa_create_rc() {
+function netify_fwa_create_rc()
+{
     $rcfile['file'] = 'netify-fwa.sh';
     $rcfile['start'] = 'mkdir -p ' .
         NETIFY_FWA_VOLATILE_STATEDIR . "\n\t" .
@@ -29,15 +30,18 @@ function netify_fwa_create_rc() {
     write_rcfile($rcfile);
 }
 
-function netify_fwa_make_directories() {
+function netify_fwa_make_directories()
+{
     safe_mkdir(NETIFY_FWA_VOLATILE_STATEDIR);
 }
 
-function netify_fwa_is_running() {
+function netify_fwa_is_running()
+{
        return isvalidpid(NETIFY_FWA_VOLATILE_STATEDIR . 'netify-fwa.pid');
 }
 
-function netify_fwa_reload() {
+function netify_fwa_reload()
+{
     if (! isvalidpid(NETIFY_FWA_VOLATILE_STATEDIR . 'netify-fwa.pid'))
         return;
 
@@ -45,22 +49,26 @@ function netify_fwa_reload() {
     posix_kill($pid, SIGHUP);
 }
 
-function netify_fwa_generate_filter_rules($type) {
+function netify_fwa_generate_filter_rules($type)
+{
     if ($type == 'pfearly')
         return "anchor \"nfa/*\"\n";
     return '';
 }
 
-function netify_fwa_package_sync() {
+function netify_fwa_package_sync()
+{
     netify_fwa_make_directories();
     netify_fwa_create_rc();
 }
 
-function netify_fwa_package_install() {
+function netify_fwa_package_install()
+{
     netify_fwa_create_rc();
 }
 
-function netify_fwa_package_deinstall() {
+function netify_fwa_package_deinstall()
+{
 }
 
 function netify_fwa_fetch_icon($url)
@@ -145,8 +153,13 @@ function netify_fwa_load_rules()
 
 function netify_fwa_save_rules($rules)
 {
-    $data = json_encode($rules, JSON_PRETTY_PRINT);
-    file_put_contents(NETIFY_FWA_JSON_RULES, $data, LOCK_EX);
+    if (($data = json_encode($rules, JSON_PRETTY_PRINT)) === false)
+        return false;
+
+    if (file_put_contents(NETIFY_FWA_JSON_RULES, $data, LOCK_EX) === false)
+        return false;
+
+    return true;
 }
 
 function netify_fwa_update_rule($rule)
@@ -206,8 +219,12 @@ function netify_fwa_update_rule($rule)
 
     $rules['rules'] = array_values($rules['rules']);
 
-    netify_fwa_save_rules($rules);
-    netify_fwa_reload();
+    if (netify_fwa_save_rules($rules)) {
+        netify_fwa_reload();
+        return true;
+    }
+
+    return false;
 }
 
 function netify_fwa_load_conf()
@@ -244,6 +261,77 @@ function netify_fwa_load_conf()
     }
 
     return $app_proto_data;
+}
+
+function netify_fwa_load_whitelist()
+{
+    $rules = netify_fwa_load_rules();
+
+    if (array_key_exists('whitelist', $rules))
+        return $rules['whitelist'];
+
+    return array();
+}
+
+function netify_fwa_save_whitelist($whitelist)
+{
+    $rules = netify_fwa_load_rules();
+    $rules['whitelist'] = array_values($whitelist);
+
+    if (netify_fwa_save_rules($rules)) {
+        netify_fwa_reload();
+        return true;
+    }
+
+    return false;
+}
+
+function netify_fwa_add_whitelist_entry($entry)
+{
+    $cidr = '';
+    if (($i = strpos($entry, '/')) !== false) {
+        $cidr = substr($entry, $i + 1);
+        $entry = substr($entry, 0, $i);
+    }
+
+    if (($ip = inet_pton($entry)) === false)
+        return false;
+
+    $type = 'ipv4';
+    if (strstr($entry, ':') !== false)
+        $type = 'ipv6';
+
+    if (strlen($cidr)) {
+
+        $value = intval($cidr);
+        if ($value == 0) return false;
+
+        switch ($type) {
+        case 'ipv4':
+            if ($value > 32) return false;
+            break;
+        case 'ipv6':
+            if ($value > 128) return false;
+            break;
+        }
+
+        $cidr = "/$cidr";
+    }
+
+    $whitelist = netify_fwa_load_whitelist();
+    $whitelist[] = array('type' => $type, 'address' => $entry . $cidr);
+
+    return netify_fwa_save_whitelist($whitelist);
+}
+
+function netify_fwa_delete_whitelist_entry($id)
+{
+    $whitelist = netify_fwa_load_whitelist();
+
+    if (array_key_exists(intval($id), $whitelist))
+        unset($whitelist[intval($id)]);
+
+    return netify_fwa_save_whitelist($whitelist);
 }
 
 ?>

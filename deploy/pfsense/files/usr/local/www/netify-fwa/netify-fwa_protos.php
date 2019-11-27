@@ -95,9 +95,6 @@ else if (array_key_exists('rules', $_GET)) {
 $pgtitle = array(gettext('Firewall'), gettext('Netify FWA'), gettext('Protocols'));
 
 include("head.inc");
-?>
-
-<?php
 
 $tab_array = array();
 $tab_array[] = array(gettext("Status"), false, "/netify-fwa/netify-fwa_status.php");
@@ -154,9 +151,9 @@ display_top_tabs($tab_array, true);
 <?php
 include("foot.inc");
 ?>
-
 <link rel="stylesheet" type="text/css" href="./css/jquery.dataTables.min.css">
 <link rel="stylesheet" type="text/css" href="./css/dataTables.fontAwesome.css">
+<link rel="stylesheet" type="text/css" href="./css/netify-fwa.css">
 <script type="text/javascript" charset="utf8" src="./js/jquery.dataTables.min.js"></script>
 
 <script type="text/javascript">
