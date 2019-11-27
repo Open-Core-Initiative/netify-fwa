@@ -64,7 +64,7 @@ else if (array_key_exists('rules', $_GET)) {
     if ($_GET['rules'] == 'application') {
         foreach ($conf['applications'] as $id => $entry) {
             $rule = array(
-                $entry['icon'], $entry['label'],
+                netify_fwa_load_icon($entry['icon']), $entry['label'],
                     action_button($id, 'application', $entry)
             );
 

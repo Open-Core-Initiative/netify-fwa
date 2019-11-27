@@ -89,7 +89,7 @@ function netify_fwa_fetch_icon($url)
     return $fh;
 }
 
-function netify_fwa_load_icon($url)
+function netify_fwa_load_icon($url, $fetch = true)
 {
     if (strlen(trim($url)) == 0) return '';
 
@@ -106,6 +106,8 @@ function netify_fwa_load_icon($url)
     $path = sprintf('%s/%s.%s', NETIFY_FWA_WWW_ICONS, $id, $ext);
 
     if (! file_exists($path)) {
+        if (! $fetch) return $url;
+
         try {
             $fh = netify_fwa_fetch_icon($url);
             $fh_md = stream_get_meta_data($fh);
@@ -120,7 +122,8 @@ function netify_fwa_load_icon($url)
 
     $path = sprintf('icons/%s.%s', $id, $ext);
 
-    if (($info = pathinfo($_SERVER['SCRIPT_NAME'])) === false) return $url;
+    if (($info = pathinfo($_SERVER['SCRIPT_NAME'])) === false)
+        return $url;
 
     return (array_key_exists('extension', $info) ?
         str_replace($info['filename'] . '.' . $info['extension'],
