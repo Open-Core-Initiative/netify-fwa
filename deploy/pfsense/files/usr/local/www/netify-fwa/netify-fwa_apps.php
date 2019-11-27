@@ -197,9 +197,7 @@ include("foot.inc");
                 'sEmptyTable': "<?=gettext('No applications defined.')?>"
             }
         });
-    });
 
-    $(document).ready(function() {
         appcatTable = $('#appcattable').DataTable({
             'columnDefs': [{
                 'targets': 0,

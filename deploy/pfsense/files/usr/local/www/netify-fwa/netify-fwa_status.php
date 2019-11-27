@@ -196,7 +196,7 @@ include("foot.inc");
         });
 
         setInterval(function() {
-            activityTable.ajax.reload();
+            activityTable.ajax.reload(null, false);
         }, 8000);
     });
 
