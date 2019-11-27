@@ -48,6 +48,8 @@ post-install:
 		${STAGEDIR}${PREFIX}/www/netify-fwa
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/netify-fwa/netify-fwa_protos.php \
 		${STAGEDIR}${PREFIX}/www/netify-fwa
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/netify-fwa/netify-fwa_whitelist.php \
+		${STAGEDIR}${PREFIX}/www/netify-fwa
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/netify-fwa/css/* \
 		${STAGEDIR}${PREFIX}/www/netify-fwa/css/
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/netify-fwa/icons/* \

@@ -30,6 +30,11 @@ share/netify-fwa/nfa_version.py
 www/netify-fwa/netify-fwa_status.php
 www/netify-fwa/netify-fwa_apps.php
 www/netify-fwa/netify-fwa_protos.php
+www/netify-fwa/netify-fwa_whitelist.php
+www/netify-fwa/css/dataTables.fontAwesome.css
+www/netify-fwa/css/jquery.dataTables.min.css
+www/netify-fwa/css/netify-fwa.css
+www/netify-fwa/js/jquery.dataTables.min.js
 www/netify-fwa/icons/290f55f7e18ba32aa9fddb15d4a971b4a5e09d32.ico
 www/netify-fwa/icons/f5a73467cfbb4681c6c5b2bf66637335153c31bc.ico
 www/netify-fwa/icons/8d08bf9da64152d0f215dda47976c0e5bdddef7e.ico
