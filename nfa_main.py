@@ -65,11 +65,11 @@ def nfa_signal_handler(signum, frame):
     if signum == signo_ALRM:
         nfa_global.expire_matches = True
     elif signum == signo_HUP:
-        nfa_global.config_reload = [4,6]
+        nfa_global.config_reload = True
     elif signum == signo_USR1:
-        nfa_global.config_reload = [4]
+        nfa_global.fw_sync.append(4)
     elif signum == signo_USR2:
-        nfa_global.config_reload = [6]
+        nfa_global.fw_sync.append(6)
     elif signum == signo_INT or signum == signo_TERM:
         syslog(LOG_WARNING, "Exiting...")
         nfa_global.should_terminate = True
@@ -91,6 +91,8 @@ def nfa_config_reload():
         if config is not None:
             nfa_global.config_dynamic = config
             syslog("Loaded dynamic configuration.")
+
+    nfa_global.config_reload = False
 
 def nfa_cat_index_refresh(config_cat_index, ttl_cat_index):
 
@@ -259,16 +261,23 @@ def nfa_main():
 
             if len(rd):
                 for event in inotify.read():
-                    nfa_global.config_reload = [4,6]
+                    nfa_global.config_reload = True
 
-        if nfa_global.config_reload is not None:
+        if nfa_global.config_reload:
             nfa_config_reload()
-            nfa_global.fw.sync(nfa_global.config_dynamic, nfa_global.config_reload)
-            nfa_global.config_reload = None
+            nfa_global.fw.sync(nfa_global.config_dynamic)
 
             if fh is not None:
                 nd.close()
                 fh = None
+
+        if len(nfa_global.fw_sync):
+            ipvs = []
+            while len(nfa_global.fw_sync):
+                ipvs.append(nfa_global.fw_sync.pop())
+
+            nfa_global.fw.install_hooks(ipvs)
+            nfa_global.fw.sync(nfa_global.config_dynamic, ipvs)
 
         if task_cat_index_update is None:
             task_cat_index_update = nfa_cat_index_refresh(config_cat_index, ttl_cat_index)

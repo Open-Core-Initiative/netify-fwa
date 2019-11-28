@@ -180,7 +180,7 @@ class nfa_fw_iptables():
 
     # Install hooks
 
-    def install_hooks(self):
+    def install_hooks(self, ipvs=[4,6]):
         ifn_int = self.get_internal_interfaces()
         ifn_ext = self.get_external_interfaces()
 
@@ -189,7 +189,7 @@ class nfa_fw_iptables():
             return False
 
         # Create whitelist chain
-        for ipv in [4, 6]:
+        for ipv in ipvs:
             self.add_chain('mangle', 'NFA_whitelist', ipv)
 
             # Add jumps to whitelist chain
@@ -259,27 +259,27 @@ class nfa_fw_iptables():
     # Synchronize state
 
     def sync(self, config_dynamic, ipvs=[4, 6]):
+
         if (config_dynamic is None):
             return
+
+        ttl_match = int(self.nfa_config.get('netify-fwa', 'ttl-match'))
+        mark_base = int(self.nfa_config.get('netify-fwa', 'mark-base'), 16)
 
         for ipv in ipvs:
             self.flush_chain('mangle', 'NFA_whitelist', ipv)
             self.flush_chain('mangle', 'NFA_ingress', ipv)
             self.flush_chain('mangle', 'NFA_egress', ipv)
 
-        ttl_match = int(self.nfa_config.get('netify-fwa', 'ttl-match'))
-        mark_base = int(self.nfa_config.get('netify-fwa', 'mark-base'), 16)
+            ipsets_new = []
+            ipsets_created = []
+            ipsets_existing = nfa_ipset.nfa_ipset_list(ipv)
 
-        ipsets_new = []
-        ipsets_created = []
-        ipsets_existing = nfa_ipset.nfa_ipset_list()
+            for rule in config_dynamic['rules']:
+                if rule['type'] != 'block': continue
 
-        for rule in config_dynamic['rules']:
-            if rule['type'] != 'block': continue
+                name = nfa_rule.criteria(rule)
 
-            name = nfa_rule.criteria(rule)
-
-            for ipv in ipvs:
                 ipset = nfa_ipset.nfa_ipset(name, ipv, ttl_match)
                 ipsets_new.append(ipset.name)
 
@@ -315,29 +315,26 @@ class nfa_fw_iptables():
 
                     mark_base += 1
 
-        for name in ipsets_existing:
-            if name in ipsets_new: continue
-            syslog(LOG_DEBUG, "ipset destroy: %s" %(name))
-            nfa_ipset.nfa_ipset_destroy(name)
+            for name in ipsets_existing:
+                if name in ipsets_new: continue
+                syslog(LOG_DEBUG, "ipset destroy: %s" %(name))
+                nfa_ipset.nfa_ipset_destroy(name)
 
-        for rule in config_dynamic['whitelist']:
-            if rule['type'] == 'mac':
-                # TODO: iptables mac module only supports --mac-source
-                continue
+            for rule in config_dynamic['whitelist']:
+                if rule['type'] == 'mac':
+                    # TODO: iptables mac module only supports --mac-source
+                    continue
 
-            ipv = 0
-            if rule['type'] == 'ipv4':
-                ipv = 4
-            if rule['type'] == 'ipv6':
-                ipv = 6
+                if ipv == 4 and rule['type'] != 'ipv4':
+                    continue
+                if ipv == 6 and rule['type'] != 'ipv6':
+                    continue
 
-            if ipv not in ipvs: continue
+                directions = ['-s', '-d']
 
-            directions = ['-s', '-d']
-
-            for direction in directions:
-                self.add_rule('mangle', 'NFA_whitelist',
-                    '%s %s -j ACCEPT' %(direction, rule['address']), ipv)
+                for direction in directions:
+                    self.add_rule('mangle', 'NFA_whitelist',
+                        '%s %s -j ACCEPT' %(direction, rule['address']), ipv)
 
     # Process flow
 

@@ -20,7 +20,7 @@ from syslog import \
 
 import nfa_util
 
-def nfa_ipset_list():
+def nfa_ipset_list(ipv=4):
 
     result = nfa_util.exec('nfa_ipset_list', ["ipset", "list", "-n"])
 
@@ -29,7 +29,7 @@ def nfa_ipset_list():
             sets = []
             _sets = result['stdout'].split()
             for s in _sets:
-                if s.startswith('NFA4_') or s.startswith('NFA6_'):
+                if s.startswith('NFA%d_' %(ipv)):
                     sets.append(s)
             return sets
 

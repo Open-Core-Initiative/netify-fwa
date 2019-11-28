@@ -19,9 +19,10 @@ from syslog import LOG_PID, LOG_PERROR
 debug = False
 
 fw = None
+fw_sync = []
 fw_interfaces = { "internal": [], "external": [] }
 
-config_reload = [4,6]
+config_reload = True
 should_terminate = False
 expire_matches = False
 
