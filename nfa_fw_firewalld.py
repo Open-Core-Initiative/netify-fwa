@@ -32,11 +32,6 @@ class nfa_fw_firewalld(nfa_fw_iptables, client.FirewallClient):
         super(nfa_fw_firewalld, self).__init__(nfa_config)
         syslog(LOG_DEBUG, "Firewalld driver initialized.")
 
-    def ip_version(self, ipv):
-        if ipv == 6:
-            return 'ipv6'
-        return 'ipv4'
-
     # Status
 
     def get_version(self):

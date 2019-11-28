@@ -1,0 +1,16 @@
+#!/bin/bash
+# Netify FWA Application/Protocol Filter Scriptlet
+
+NFA_PID_FILE=/run/netify-fwa/netify-fwa.pid
+
+if [ ! -f $NFA_PID_FILE ]; then
+    fw_logger warning "Netify FWA is not running, not creating hook rules."
+elif [ ! -d "/proc/$(cat $NFA_PID_FILE)" ]; then
+    fw_logger warning "Netify FWA is not running, not creating hook rules."
+else
+    if [ "$FW_PROTO" == "ipv4" ]; then
+        kill -USR1 $(cat $NFA_PID_FILE)
+    else
+        kill -USR2 $(cat $NFA_PID_FILE)
+    fi
+fi

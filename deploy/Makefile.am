@@ -11,6 +11,7 @@ BUILT_SOURCES = $(TEMPLATEFILES)
 CLEANFILES = $(TEMPLATEFILES)
 
 EXTRA_DIST = $(TEMPLATEFILES_IN) \
+	clearos/10-netify-fwa \
 	netify-fwa.json \
 	pfsense/files \
 	pfsense/Makefile.in \

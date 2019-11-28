@@ -70,42 +70,10 @@ class nfa_fw_clearos(nfa_fw_iptables):
     def get_internal_interfaces(self):
         return self.interfaces['internal']
 
-    # Chains
-
-    def get_chains(self):
-        nfa_chains = []
-
-        return nfa_chains
-
-    def chain_exists(self, table, name, ipv=4):
-        chains = []
-
-        return False
-
-    def add_chain(self, table, name, ipv=4):
-        pass
-
-    def flush_chain(self, table, name, ipv=4):
-        pass
-
-    def delete_chain(self, table, name, ipv=4):
-        pass
-
-    # Rules
-
-    def rule_exists(self, table, chain, args, ipv=4, priority=0):
-        return False
-
-    def add_rule(self, table, chain, args, ipv=4, priority=0):
-        pass
-
-    def delete_rule(self, table, chain, args, ipv=4, priority=0):
-        pass
-
     # Test
 
     def test(self):
-        pass
+        super().test()
 
     # Private
 

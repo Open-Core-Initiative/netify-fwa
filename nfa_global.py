@@ -21,7 +21,7 @@ debug = False
 fw = None
 fw_interfaces = { "internal": [], "external": [] }
 
-config_reload = True
+config_reload = [4,6]
 should_terminate = False
 expire_matches = False
 

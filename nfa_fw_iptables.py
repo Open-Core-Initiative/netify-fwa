@@ -35,6 +35,11 @@ class nfa_fw_iptables():
 
         syslog(LOG_DEBUG, "IPTables Firewall driver initialized.")
 
+    def ip_version(self, ipv):
+        if ipv == 6:
+            return 'ipv6'
+        return 'ipv4'
+
     # Status
 
     def get_version(self):
@@ -63,50 +68,115 @@ class nfa_fw_iptables():
 
     def get_chains(self):
 
-        table = self.nfa_config.get('iptables', 'table')
-
+        table = 'mangle'
         nfa_chains = []
 
         for ipv in [ 4, 6 ]:
             iptables = 'ip%stables' %('' if ipv == 4 else '6')
+
             result = nfa_util.exec(
-                'nfa_fw_iptables::get_chains', [ iptables, '-t', table, '-L',  '-n' ]
+                'nfa_fw_iptables::get_chains', [ iptables, '-w', '-t', table, '-S' ]
             )
 
-        if result['rc'] != 0:
-            return nfa_chains
+            if result['rc'] != 0:
+                return nfa_chains
 
-#        lines = result['stdout'].rstrip().split("\n")
+            lines = result['stdout'].rstrip().split("\n")
 
-#        for line in lines:
-#            if line.startswith('Chain NFA_'):
+            for line in lines:
+                if line.startswith('-N NFA_'):
+                    chain = line.split()
+                    nfa_chains.append([ 'ipv' + str(ipv), table, chain[1] ])
 
         return nfa_chains
 
     def chain_exists(self, table, name, ipv=4):
-        chains = []
-
+        chains = self.get_chains()
+        for chain in chains:
+            if self.ip_version(ipv) == chain[0] and \
+                table == chain[1] and name[0:28] == chain[2]:
+                return True
         return False
 
     def add_chain(self, table, name, ipv=4):
-        pass
+        if not self.chain_exists(table, name, ipv):
+            iptables = 'ip%stables' %('' if ipv == 4 else '6')
+
+            result = nfa_util.exec(
+                'nfa_fw_iptables::add_chain', [ iptables, '-w', '-t', table, '-N', name ]
+            )
+
+            if result['rc'] == 0:
+                return True
+
+        return False
 
     def flush_chain(self, table, name, ipv=4):
-        pass
+        if self.chain_exists(table, name, ipv):
+            iptables = 'ip%stables' %('' if ipv == 4 else '6')
+
+            result = nfa_util.exec(
+                'nfa_fw_iptables::flush_chain', [ iptables, '-w', '-t', table, '-F', name ]
+            )
+
+            if result['rc'] == 0:
+                return True
+
+        return False
 
     def delete_chain(self, table, name, ipv=4):
-        pass
+        if self.chain_exists(table, name, ipv):
+            iptables = 'ip%stables' %('' if ipv == 4 else '6')
+
+            result = nfa_util.exec(
+                'nfa_fw_iptables::delete_chain', [ iptables, '-w', '-t', table, '-X', name ]
+            )
+
+            if result['rc'] == 0:
+                return True
+
+        return False
 
     # Rules
 
     def rule_exists(self, table, chain, args, ipv=4, priority=0):
+
+        if not chain.startswith('NFA_') or self.chain_exists(table, chain, ipv):
+            iptables = 'ip%stables' %('' if ipv == 4 else '6')
+            params = [ iptables, '-w', '-t', table, '-C', chain ] + args.split()
+
+            result = nfa_util.exec('nfa_fw_iptables::rule_exists', params)
+
+            if result['rc'] == 0:
+                return True
+
         return False
 
     def add_rule(self, table, chain, args, ipv=4, priority=0):
-        pass
+
+        iptables = 'ip%stables' %('' if ipv == 4 else '6')
+        params = [ iptables, '-w', '-t', table, '-A', chain ] + args.split()
+
+        result = nfa_util.exec('nfa_fw_iptables::add_rule', params)
+
+        if result['rc'] != 0:
+            return False
+
+        return True
 
     def delete_rule(self, table, chain, args, ipv=4, priority=0):
-        pass
+
+        if self.rule_exists(table, chain, args, ipv, priority):
+            iptables = 'ip%stables' %('' if ipv == 4 else '6')
+            params = [ iptables, '-w', '-t', table, '-D', chain ] + args.split()
+
+            result = nfa_util.exec('nfa_fw_iptables::delete_rule', params)
+
+            if result['rc'] == 0:
+                return True
+
+        return False
+
 
     # Install hooks
 
@@ -139,7 +209,6 @@ class nfa_fw_iptables():
 
             # Create block chain
             self.add_chain('mangle', 'NFA_block', ipv)
-
             self.add_rule('mangle', 'NFA_block', '-j DROP', ipv)
 
             # Add jumps to block chain
@@ -154,14 +223,17 @@ class nfa_fw_iptables():
 
     def remove_hooks(self):
         for ipv in [4, 6]:
-            self.delete_rule('mangle', 'FORWARD', '-j NFA_whitelist', ipv)
+            if self.chain_exists('mangle', 'NFA_whitelist', ipv):
+                self.delete_rule('mangle', 'FORWARD', '-j NFA_whitelist', ipv)
 
             for iface in self.interfaces['external']:
-                self.delete_rule('mangle', 'FORWARD',
-                    '-i %s -j NFA_ingress' %(iface), ipv)
+                if self.chain_exists('mangle', 'NFA_ingress', ipv):
+                    self.delete_rule('mangle', 'FORWARD',
+                        '-i %s -j NFA_ingress' %(iface), ipv)
             for iface in self.interfaces['internal']:
-                self.delete_rule('mangle', 'FORWARD',
-                    '-i %s -j NFA_egress' %(iface), ipv)
+                if self.chain_exists('mangle', 'NFA_egress', ipv):
+                    self.delete_rule('mangle', 'FORWARD',
+                        '-i %s -j NFA_egress' %(iface), ipv)
 
             self.flush_chain('mangle', 'NFA_whitelist', ipv)
             self.delete_chain('mangle', 'NFA_whitelist', ipv)
@@ -172,11 +244,11 @@ class nfa_fw_iptables():
             self.flush_chain('mangle', 'NFA_egress', ipv)
             self.delete_chain('mangle', 'NFA_egress', ipv)
 
-
-            self.delete_rule('mangle', 'FORWARD',
-                '-m mark --mark 0x%08x/0x%08x -j NFA_block' %(
-                    self.mark_base, self.mark_mask
-                ), ipv)
+            if self.chain_exists('mangle', 'NFA_block', ipv):
+                self.delete_rule('mangle', 'FORWARD',
+                    '-m mark --mark 0x%08x/0x%08x -j NFA_block' %(
+                        self.mark_base, self.mark_mask
+                    ), ipv)
 
             self.flush_chain('mangle', 'NFA_block', ipv)
             self.delete_chain('mangle', 'NFA_block', ipv)
@@ -186,11 +258,11 @@ class nfa_fw_iptables():
 
     # Synchronize state
 
-    def sync(self, config_dynamic):
+    def sync(self, config_dynamic, ipvs=[4, 6]):
         if (config_dynamic is None):
             return
 
-        for ipv in [4, 6]:
+        for ipv in ipvs:
             self.flush_chain('mangle', 'NFA_whitelist', ipv)
             self.flush_chain('mangle', 'NFA_ingress', ipv)
             self.flush_chain('mangle', 'NFA_egress', ipv)
@@ -207,7 +279,7 @@ class nfa_fw_iptables():
 
             name = nfa_rule.criteria(rule)
 
-            for ipv in [4, 6]:
+            for ipv in ipvs:
                 ipset = nfa_ipset.nfa_ipset(name, ipv, ttl_match)
                 ipsets_new.append(ipset.name)
 
@@ -259,6 +331,8 @@ class nfa_fw_iptables():
             if rule['type'] == 'ipv6':
                 ipv = 6
 
+            if ipv not in ipvs: continue
+
             directions = ['-s', '-d']
 
             for direction in directions:
@@ -296,4 +370,4 @@ class nfa_fw_iptables():
     # Test
 
     def test(self):
-        pass
+        syslog(LOG_DEBUG, "chains: %s" %(self.get_chains()))

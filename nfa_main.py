@@ -27,7 +27,7 @@ import math
 from getopt import getopt, GetoptError
 
 from signal import \
-    signal, Signals, SIGALRM, SIGHUP, SIGINT, SIGTERM
+    signal, Signals, SIGALRM, SIGHUP, SIGINT, SIGTERM, SIGUSR1, SIGUSR2
 
 from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
@@ -52,16 +52,24 @@ def nfa_signal_handler(signum, frame):
         signo_HUP = SIGHUP
         signo_INT = SIGINT
         signo_TERM = SIGTERM
+        signo_USR1 = SIGUSR1
+        signo_USR2 = SIGUSR2
     else:
         signo_ALRM = SIGALRM.value
         signo_HUP = SIGHUP.value
         signo_INT = SIGINT.value
         signo_TERM = SIGTERM.value
+        signo_USR1 = SIGUSR1.value
+        signo_USR2 = SIGUSR2.value
 
     if signum == signo_ALRM:
         nfa_global.expire_matches = True
     elif signum == signo_HUP:
-        nfa_global.config_reload = True
+        nfa_global.config_reload = [4,6]
+    elif signum == signo_USR1:
+        nfa_global.config_reload = [4]
+    elif signum == signo_USR2:
+        nfa_global.config_reload = [6]
     elif signum == signo_INT or signum == signo_TERM:
         syslog(LOG_WARNING, "Exiting...")
         nfa_global.should_terminate = True
@@ -83,8 +91,6 @@ def nfa_config_reload():
         if config is not None:
             nfa_global.config_dynamic = config
             syslog("Loaded dynamic configuration.")
-
-    nfa_global.config_reload = False
 
 def nfa_cat_index_refresh(config_cat_index, ttl_cat_index):
 
@@ -158,6 +164,8 @@ def nfa_fw_init():
         return False
 
     nfa_global.fw.test()
+
+    nfa_global.fw.remove_hooks()
 
     return nfa_global.fw.install_hooks()
 
@@ -251,11 +259,13 @@ def nfa_main():
 
             if len(rd):
                 for event in inotify.read():
-                    nfa_global.config_reload = True
+                    nfa_global.config_reload = [4,6]
 
-        if nfa_global.config_reload:
+        if nfa_global.config_reload is not None:
             nfa_config_reload()
-            nfa_global.fw.sync(nfa_global.config_dynamic)
+            nfa_global.fw.sync(nfa_global.config_dynamic, nfa_global.config_reload)
+            nfa_global.config_reload = None
+
             if fh is not None:
                 nd.close()
                 fh = None
@@ -356,5 +366,7 @@ if __name__ == "__main__":
     signal(SIGHUP, nfa_signal_handler)
     signal(SIGINT, nfa_signal_handler)
     signal(SIGTERM, nfa_signal_handler)
+    signal(SIGUSR1, nfa_signal_handler)
+    signal(SIGUSR2, nfa_signal_handler)
 
     sys.exit(nfa_main())
