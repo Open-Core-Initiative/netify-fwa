@@ -38,6 +38,9 @@ def flow_matches(flow, rule):
         nfa_global.rx_app_id = re.compile('\d+')
         syslog(LOG_DEBUG, 'Compiled app_id regex.')
 
+    if 'enable' in rule and rule['enable'] == False:
+        return False
+
     match = {
         'timestamp': math.floor(time.time()),
         'type': rule['type'],
