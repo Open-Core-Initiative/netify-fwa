@@ -194,6 +194,7 @@ include("foot.inc");
 
     $(document).ready(function() {
         whitelistTable = $('#whitelisttable').DataTable({
+            'dom': 'tipr',
             'columnDefs': [{
                 'targets': 1,
                 'orderable': false
