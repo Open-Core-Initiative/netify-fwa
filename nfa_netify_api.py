@@ -28,7 +28,7 @@ def get(url):
         if nfa_global.should_terminate:
             return None
 
-        print("url: " + url)
+        syslog(LOG_DEBUG, "url: " + url)
 
         with urllib.request.urlopen(url) as ul:
             data = json.loads(ul.read().decode())
@@ -37,6 +37,10 @@ def get(url):
 
     except urllib.error.URLError as e:
         syslog(LOG_ERR, "API request failed: %s" %(e.reason))
+        return None
+
+    except:
+        syslog(LOG_ERR, 'API request failed: Unknown exception.');
         return None
 
 def get_data(url):

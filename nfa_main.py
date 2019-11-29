@@ -319,7 +319,7 @@ def nfa_main():
                 if jd['flow']['detected_protocol'] == 5 or \
                     jd['flow']['detected_protocol'] == 8: continue
 
-                #print(jd)
+                #syslog(LOG_DEBUG, str(jd))
 
                 nfa_global.fw.process_flow(jd)
 
