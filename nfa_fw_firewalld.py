@@ -23,22 +23,26 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
-import nfa_fw_iptables
+import nfa_ipset
 
-class nfa_fw_firewalld(nfa_fw_iptables, client.FirewallClient):
+from nfa_fw_iptables import nfa_fw_iptables
+
+class nfa_fw_firewalld(nfa_fw_iptables):
     """Firewalld support for Netify FWA"""
 
     def __init__(self, nfa_config):
         super(nfa_fw_firewalld, self).__init__(nfa_config)
+        self.fwd = client.FirewallClient()
+        self.load_firewalld_configuration()
         syslog(LOG_DEBUG, "Firewalld driver initialized.")
 
     # Status
 
     def get_version(self):
-        return "firewalld v" + self.get_property("version")
+        return "firewalld v" + self.fwd.get_property("version")
 
     def is_running(self):
-        state = self.get_property("state")
+        state = self.fwd.get_property("state")
         syslog(LOG_DEBUG, "Firewall engine state: %s" %(state))
         if state == "RUNNING":
             return True
@@ -48,40 +52,28 @@ class nfa_fw_firewalld(nfa_fw_iptables, client.FirewallClient):
 
     def get_zone_interfaces(self, zone):
         ifaces = []
-        fw_config = self.config()
+        fw_config = self.fwd.config()
         try:
-            zone_config = fw_config.getZoneByName(zone)
+            zone_config = fw_config.fwd.getZoneByName(zone)
         except:
             syslog(LOG_WARNING, "Zone doesn't exist: %s" %(zone))
             return ifaces
 
-        return self.getInterfaces(zone)
+        return self.fwd.getInterfaces(zone)
 
     # Interfaces
 
     def get_external_interfaces(self):
-        ifaces = []
-        zones = self.nfa_config.get('firewalld', 'zones-external').split(',')
-
-        for zone in zones:
-            ifaces.extend(self.get_zone_interfaces(zone.strip()))
-
-        return ifaces
+        return self.interfaces['external']
 
     def get_internal_interfaces(self):
-        ifaces = []
-        zones = self.nfa_config.get('firewalld', 'zones-internal').split(',')
-
-        for zone in zones:
-            ifaces.extend(self.get_zone_interfaces(zone.strip()))
-
-        return ifaces
+        return self.interfaces['internal']
 
     # Chains
 
     def get_chains(self):
         nfa_chains = []
-        all_chains = self.getAllChains()
+        all_chains = self.fwd.getAllChains()
         for chain in all_chains:
             if chain[2].startswith('NFA_'):
                 nfa_chains.append(chain)
@@ -97,39 +89,39 @@ class nfa_fw_firewalld(nfa_fw_iptables, client.FirewallClient):
 
     def add_chain(self, table, name, ipv=4):
         if not self.chain_exists(table, name, ipv):
-            self.addChain(self.ip_version(ipv), table, name[0:28])
+            self.fwd.addChain(self.ip_version(ipv), table, name[0:28])
 
     def flush_chain(self, table, name, ipv=4):
-        self.removeRules(self.ip_version(ipv), table, name[0:28])
+        self.fwd.removeRules(self.ip_version(ipv), table, name[0:28])
 
     def delete_chain(self, table, name, ipv=4):
         if self.chain_exists(table, name, ipv):
-            self.removeChain(self.ip_version(ipv), table, name[0:28])
+            self.fwd.removeChain(self.ip_version(ipv), table, name[0:28])
 
     # Rules
 
     def rule_exists(self, table, chain, args, ipv=4, priority=0):
-        return self.queryRule(
+        return self.fwd.queryRule(
             self.ip_version(ipv), table, chain, priority, splitArgs(args)
         )
 
     def add_rule(self, table, chain, args, ipv=4, priority=0):
         if not self.rule_exists(table, chain, args, ipv, priority):
-            self.addRule(
+            self.fwd.addRule(
                 self.ip_version(ipv), table, chain, priority, splitArgs(args)
             )
 
     def delete_rule(self, table, chain, args, ipv=4, priority=0):
         if self.rule_exists(table, chain, args, ipv, priority):
-            self.removeRule(
+            self.fwd.removeRule(
                 self.ip_version(ipv), table, chain, priority, splitArgs(args)
             )
 
     # Test
 
     def test(self):
-        zone_default = self.getDefaultZone()
-        zone_settings = self.getZoneSettings(zone_default)
+        zone_default = self.fwd.getDefaultZone()
+        zone_settings = self.fwd.getZoneSettings(zone_default)
 
         syslog(LOG_DEBUG, "  name: %s" %(zone_settings.getShort()))
         syslog(LOG_DEBUG, "  desc: %s" %(zone_settings.getDescription()))
@@ -149,3 +141,18 @@ class nfa_fw_firewalld(nfa_fw_iptables, client.FirewallClient):
 
         self.add_rule('mangle', 'PREROUTING',
             '-s 10.0.0.1 -j MARK --set-mark=0x9000')
+
+    # Private
+
+    def load_firewalld_configuration(self):
+        self.interfaces = { "internal": [], "external": [] }
+
+        zones = self.nfa_config.get('firewalld', 'zones-external').split(',')
+
+        for zone in zones:
+            self.interfaces['external'].extend(self.get_zone_interfaces(zone.strip()))
+
+        zones = self.nfa_config.get('firewalld', 'zones-internal').split(',')
+
+        for zone in zones:
+            self.interfaces['internal'].extend(self.get_zone_interfaces(zone.strip()))
