@@ -1,4 +1,6 @@
 # Netify FWA Daemon
+%undefine __brp_python_bytecompile
+%global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 
 Name: @PACKAGE_TARNAME@
 Version: @PACKAGE_VERSION@
@@ -14,8 +16,6 @@ BuildRoot: /var/tmp/%{name}-%{version}
 Requires: ipset
 Requires: netifyd >= 2.97-1
 Requires: app-firewall-core
-Requires: webconfig-httpd
-Requires: webconfig-php-cli
 Requires: rh-python36-runtime
 BuildRequires: systemd
 BuildRequires: autoconf >= 2.69
@@ -23,7 +23,7 @@ BuildRequires: automake
 %{?systemd_requires}
 
 %description
-Netify FWA Daemon
+Netify FWA manages firewall policies using realtime Netify Agent protocol and application detections.
 
 Report bugs to: @PACKAGE_BUGREPORT@
 
@@ -36,19 +36,12 @@ Report bugs to: @PACKAGE_BUGREPORT@
 
 # Install
 %install
-mkdir -p %{buildroot}/%{_sharedstatedir}/%{name}
 
-install -D -m 644 %{name}.php %{buildroot}/%{_datarootdir}/%{name}/%{name}.php
-install -D -m 644 include/nfa-version.php %{buildroot}/%{_datarootdir}/%{name}/include/nfa-version.php
-install -D -m 644 netify-proto.php %{buildroot}/%{_datarootdir}/%{name}/netify-proto.php
-install -D -m 755 deploy/%{name}.sh %{buildroot}/%{_sbindir}/%{name}
-install -D -m 644 deploy/systemd/%{name}.service %{buildroot}/%{_unitdir}/%{name}.service
-install -D -m 0644 deploy/systemd/%{name}.tmpf %{buildroot}/%{_tmpfilesdir}/%{name}.conf
-#install -D -m 0660 deploy/clearos/%{name}.conf %{buildroot}/%{_sysconfdir}/%{name}.conf
-#install -D -m 0755 deploy/clearos/exec-start-post.sh %{buildroot}/%{_libexecdir}/%{name}/exec-start-post.sh
-#install -D -m 0755 deploy/clearos/exec-stop-post.sh %{buildroot}/%{_libexecdir}/%{name}/exec-stop-post.sh
-mkdir -p %{buildroot}/run
-install -d -m 0755 %{buildroot}/run/%{name}
+make install DESTDIR=%{buildroot}
+
+mkdir -p %{buildroot}/run/%{name}
+
+install -D -m 0660 deploy/clearos/%{name}.ini %{buildroot}/%{_sysconfdir}/%{name}/%{name}.ini
 
 # Clean-up
 %clean
@@ -70,14 +63,11 @@ install -d -m 0755 %{buildroot}/run/%{name}
 %files
 %defattr(-,root,root)
 %attr(755,root,root) %{_sbindir}/%{name}
-%dir %attr(750,root,webconfig) %{_sharedstatedir}/%{name}
 %attr(644,root,root) %{_datarootdir}/%{name}/*.py
-%attr(755,root,root) %{_unitdir}
 %attr(644,root,root) %{_unitdir}/%{name}.service
-%dir /run/%{name}
 %attr(644,root,root) %{_tmpfilesdir}/%{name}.conf
-#%attr(644,root,root) %{_sysconfdir}/%{name}.conf
-#%attr(755,root,root) %{_libexecdir}/%{name}/
-#%config(noreplace) %attr(664,root,root) %{_sysconfdir}/%{name}.conf
+%dir /run/%{name}
+%config(noreplace) %attr(644,root,root) %{_sysconfdir}/%{name}/%{name}.ini
+%config(noreplace) %attr(664,root,root) %{_sysconfdir}/%{name}/%{name}.json
 
 # vi: expandtab shiftwidth=4 softtabstop=4 tabstop=4

@@ -12,6 +12,7 @@ CLEANFILES = $(TEMPLATEFILES)
 
 EXTRA_DIST = $(TEMPLATEFILES_IN) \
 	clearos/10-netify-fwa \
+	clearos/netify-fwa.ini \
 	netify-fwa.json \
 	pfsense/files \
 	pfsense/Makefile.in \
