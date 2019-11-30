@@ -165,7 +165,7 @@ def nfa_fw_init():
         syslog(LOG_ERR, "Firewall engine is not running.")
         return False
 
-    nfa_global.fw.test()
+    #nfa_global.fw.test()
 
     nfa_global.fw.remove_hooks()
 
