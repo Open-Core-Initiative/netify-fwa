@@ -54,7 +54,7 @@ class nfa_fw_firewalld(nfa_fw_iptables):
         ifaces = []
         fw_config = self.fwd.config()
         try:
-            zone_config = fw_config.fwd.getZoneByName(zone)
+            zone_config = fw_config.getZoneByName(zone)
         except:
             syslog(LOG_WARNING, "Zone doesn't exist: %s" %(zone))
             return ifaces
