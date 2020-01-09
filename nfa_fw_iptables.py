@@ -30,8 +30,9 @@ class nfa_fw_iptables():
 
         self.flavor = 'iptables'
         self.nfa_config = nfa_config
-        self.mark_base = int(nfa_config.get('netify-fwa', 'mark-base'), 16)
-        self.mark_mask = int(nfa_config.get('netify-fwa', 'mark-mask'), 16)
+        self.ttl_match = int(self.nfa_config.get('netify-fwa', 'ttl-match'))
+        self.mark_bitshift = int(nfa_config.get('iptables', 'mark-bitshift'))
+        self.mark_mask = int(nfa_config.get('iptables', 'mark-mask'), 16)
 
         syslog(LOG_DEBUG, "IPTables Firewall driver initialized.")
 
@@ -213,9 +214,8 @@ class nfa_fw_iptables():
 
             # Add jumps to block chain
             self.add_rule('mangle', 'FORWARD',
-                '-m mark --mark 0x%08x/0x%08x -j NFA_block' %(
-                    self.mark_base, self.mark_mask
-                ), ipv)
+                '-m mark ! --mark 0x0/0x%x -j NFA_block' %(self.mark_mask),
+                ipv)
 
         return True
 
@@ -246,8 +246,8 @@ class nfa_fw_iptables():
 
             if self.chain_exists('mangle', 'NFA_block', ipv):
                 self.delete_rule('mangle', 'FORWARD',
-                    '-m mark --mark 0x%08x/0x%08x -j NFA_block' %(
-                        self.mark_base, self.mark_mask
+                    '-m mark ! --mark 0x0/0x%x -j NFA_block' %(
+                        self.mark_mask
                     ), ipv)
 
             self.flush_chain('mangle', 'NFA_block', ipv)
@@ -263,9 +263,6 @@ class nfa_fw_iptables():
         if (config_dynamic is None):
             return
 
-        ttl_match = int(self.nfa_config.get('netify-fwa', 'ttl-match'))
-        mark_base = int(self.nfa_config.get('netify-fwa', 'mark-base'), 16)
-
         for ipv in ipvs:
             self.flush_chain('mangle', 'NFA_whitelist', ipv)
             self.flush_chain('mangle', 'NFA_ingress', ipv)
@@ -278,9 +275,14 @@ class nfa_fw_iptables():
             for rule in config_dynamic['rules']:
                 if rule['type'] != 'block': continue
 
+                if 'mark' not in rule:
+                    mark = 1 << self.mark_bitshift
+                else:
+                    mark = int(rule['mark']) << self.mark_bitshift
+
                 name = nfa_rule.criteria(rule)
 
-                ipset = nfa_ipset.nfa_ipset(name, ipv, ttl_match)
+                ipset = nfa_ipset.nfa_ipset(name, ipv, self.ttl_match)
                 ipsets_new.append(ipset.name)
 
                 if ipset.name not in ipsets_existing and ipset.name not in ipsets_created:
@@ -311,9 +313,7 @@ class nfa_fw_iptables():
                             params = '%s --timestop %s' %(params, rule['time-stop'])
 
                     self.add_rule('mangle', 'NFA_%s' %(direction),
-                        '%s -j MARK --set-mark 0x%x' %(params, mark_base), ipv)
-
-                    mark_base += 1
+                        '%s -j MARK --set-xmark 0x%x/0x%x' %(params, mark, self.mark_mask), ipv)
 
             for name in ipsets_existing:
                 if name in ipsets_new: continue

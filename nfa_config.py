@@ -35,8 +35,6 @@ def create_main():
 
     config.add_section('netify-fwa')
     config.set('netify-fwa', 'firewall-engine', 'firewalld')
-    config.set('netify-fwa', 'mark-base', '0x900000')
-    config.set('netify-fwa', 'mark-mask', '0xf00000')
     config.set('netify-fwa', 'path-config-dynamic', NFA_CONF_DYNAMIC)
     config.set('netify-fwa', 'path-status', NFA_PATH_STATUS)
     config.set('netify-fwa', 'path-status-matches', NFA_PATH_STATUS_MATCHES)
@@ -47,6 +45,8 @@ def create_main():
     config.set('firewalld', 'zones-internal', 'internal')
 
     config.add_section('iptables')
+    config.set('iptables', 'mark-bitshift', '11')
+    config.set('iptables', 'mark-mask', '0x800')
     config.set('iptables', 'interfaces-external', 'eth0')
     config.set('iptables', 'interfaces-internal', 'eth1,eth2')
 
