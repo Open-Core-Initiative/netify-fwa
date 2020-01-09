@@ -112,7 +112,9 @@ class netifyd:
 
         if len(data) != jd['length']:
             syslog(LOG_WARNING,
-                "%s: Malformed JSON structure: invalid length (%d != %d)" %(self.uri, len(data), jd['length']))
+                "%s: Malformed JSON structure: invalid length (%d != %d)"
+                    %(self.uri, len(data), jd['length'])
+                )
             return None
 
         jd = json.loads(data)
