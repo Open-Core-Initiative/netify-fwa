@@ -15,15 +15,27 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.69])
-AC_INIT([Netify FWA], [1.2.1],
+AC_INIT([Netify FWA], [1.2.3],
     [https://gitlab.com/netify.ai/public/netify-fwa/issues],
     [netify-fwa], [http://www.netify.ai/])
 AM_INIT_AUTOMAKE([1.9 tar-pax])
 AC_CONFIG_SRCDIR([nfa_main.py])
+AC_CONFIG_HEADERS([pf/config.h])
+AC_CONFIG_MACRO_DIR([m4])
+AC_CANONICAL_HOST
 
 # Checks for programs.
 AC_PROG_SED
 PKG_PROG_PKG_CONFIG([0.23])
+AC_PROG_CC
+AM_PROG_LIBTOOL
+AC_PROG_INSTALL
+
+case "${host_os}" in
+    freebsd*)
+        PKG_CHECK_MODULES([PYTHON36], [python-3.6])
+        ;;
+esac
 
 # Parameters: --with/without
 AC_ARG_WITH([systemdsystemunitdir],
@@ -54,11 +66,12 @@ AS_IF([test "x$with_tmpfilesdir" = "xyes" -o "x$with_tmpfilesdir" = "xauto"], [
    [with_tmpfilesdir="$def_tmpfilesdir"])])
 AS_IF([test "x$with_tmpfilesdir" != "xno"],
       [AC_SUBST([tmpfilesdir], [$with_tmpfilesdir])])
-# Convience substitutions
+
+# Convenience substitutions
 AC_SUBST([persistentstatedir], [$sysconfdir/netify-fwa])
 AC_SUBST([volatilestatedir], [$localstatedir/run/$PACKAGE_TARNAME])
 
 AC_CONFIG_FILES([Makefile deploy/Makefile deploy/rpm/netify-fwa.spec \
-    deploy/pfsense/Makefile deploy/systemd/Makefile])
+    pf/Makefile deploy/pfsense/Makefile deploy/systemd/Makefile])
 
 AC_OUTPUT

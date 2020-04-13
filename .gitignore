@@ -11,3 +11,9 @@ install-sh
 missing
 nfa_defaults.py
 nfa_version.py
+compile
+config.guess
+config.sub
+depcomp
+libtool
+ltmain.sh

@@ -1,0 +1,9 @@
+/Makefile.in
+Makefile
+config.*
+stamp-h1
+.deps
+.libs
+*.la
+*.lo
+*.o
