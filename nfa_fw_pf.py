@@ -14,11 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import tempfile
 
 from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
+
+import pf
 
 import nfa_global
 import nfa_rule
@@ -30,7 +33,15 @@ class nfa_fw_pf():
     def __init__(self, nfa_config):
         self.flavor = 'pf'
         self.nfa_config = nfa_config
+
+        pf.set_syslog(syslog)
+
+        pf.open("/dev/pf")
+
         syslog(LOG_DEBUG, "PF Firewall driver initialized.")
+
+    def __del__(self):
+        pf.close()
 
     # Status
 
@@ -38,7 +49,7 @@ class nfa_fw_pf():
         return "pf"
 
     def is_running(self):
-        return True
+        return True if pf.status() != 0 else False
 
     # Interfaces
 
@@ -88,23 +99,13 @@ class nfa_fw_pf():
 
     def anchor_list(self, anchor="nfa"):
 
-        result = nfa_util.exec(
-            'anchor_list', ['pfctl', '-a', anchor, '-s', 'Anchors']
-        )
-        if result['rc'] == 0 and len(result['stdout']):
-            return result['stdout'].split()
-
-        return []
+        return pf.anchor_list(anchor)
 
     # Flush all rules from anchor
 
     def anchor_flush(self, anchor):
 
-        result = nfa_util.exec(
-            'anchor_flush', ['pfctl', '-a', anchor, '-F', 'rules']
-        )
-        if result['rc'] == 0:
-            nfa_util.exec_log_output('anchor_flush', result['stderr'], LOG_DEBUG)
+        pf.anchor_flush(anchor)
 
     # Load rules into anchor
 
@@ -158,23 +159,14 @@ class nfa_fw_pf():
     # Kill table
 
     def table_kill(self, anchor, table):
-        result = nfa_util.exec(
-            'table_kill',
-            ['pfctl', '-a', anchor, '-t', table, '-T', 'kill']
-        )
-        if result['rc'] == 0:
-            nfa_util.exec_log_output('table_kill', result['stderr'], LOG_DEBUG)
+
+        pf.table_kill(anchor, table)
 
     # Expire table entries
 
     def table_expire(self, anchor, table, ttl):
 
-        result = nfa_util.exec(
-            'table_expire',
-            ['pfctl', '-a', anchor, '-t', table, '-T', 'expire', str(ttl)]
-        )
-        if result['rc'] == 0:
-            nfa_util.exec_log_output('table_expire', result['stderr'], LOG_DEBUG)
+        pf.table_expire(anchor, table, int(ttl))
 
     # Kill state for entries matching label
 
@@ -225,7 +217,7 @@ class nfa_fw_pf():
         for rule in config_dynamic['rules']:
             if rule['type'] != 'block': continue
             if 'weekdays' in rule or 'time-start' in rule:
-                syslog(LOG_WARNING, "Time-of-day rules not supported by pf driver.")
+                syslog(LOG_WARNING, "Time-of-day rules not supported by PF driver.")
                 continue
 
             name = "nfa/block_%s" %(nfa_rule.criteria(rule))
@@ -254,7 +246,7 @@ class nfa_fw_pf():
         rules = [ b'anchor "00_whitelist"' ]
 
         for name in ba_new:
-            rules.append(b'anchor "%b"' %(str.encode(name)))
+            rules.append(b'anchor "%b"' %(str.encode(os.path.basename(name))))
 
         self.anchor_load('nfa', rules)
 
@@ -304,7 +296,6 @@ class nfa_fw_pf():
             if anchor == 'nfa/00_whitelist':
                 continue
 
-            syslog(LOG_DEBUG, "Expiring matches: %s (ttl: %s)" %(anchor, ttl))
             self.table_expire(anchor, "nfa_local", ttl)
             self.table_expire(anchor, "nfa_remote", ttl)
 
@@ -323,6 +314,7 @@ class nfa_fw_pf():
 
             if anchor == 'nfa/00_whitelist':
                 self.table_flush(anchor, 'nfa_whitelist')
+                self.table_kill(anchor, 'nfa_whitelist')
                 self.kill_state_by_label(anchor, 'nfa_whitelist')
                 continue
 
@@ -332,6 +324,8 @@ class nfa_fw_pf():
             self.table_kill(anchor, 'nfa_remote')
 
             self.kill_state_by_label(anchor, 'nfa_block')
+
+        self.anchor_flush("nfa")
 
     # Test
 
