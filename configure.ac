@@ -34,6 +34,7 @@ AC_PROG_INSTALL
 case "${host_os}" in
     freebsd*)
         PKG_CHECK_MODULES([PYTHON36], [python-3.6])
+        AM_CONDITIONAL(USE_PF, true)
         ;;
 esac
 
