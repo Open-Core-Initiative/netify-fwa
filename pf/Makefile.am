@@ -5,9 +5,10 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = $(CPPFLAGS) -D_GNU_SOURCE -I $(top_srcdir)/pf $(PYTHON36_CFLAGS) 
+AM_CPPFLAGS = $(CPPFLAGS) -D_GNU_SOURCE -I $(top_srcdir)/pf $(PYTHON36_CFLAGS)
 
 lib_LTLIBRARIES = libpf.la
 libpf_la_SOURCES = pf.c
 libpf_la_LIBADD = $(PYTHON36_LIBS)
 
+noinst_HEADERS = pf.h

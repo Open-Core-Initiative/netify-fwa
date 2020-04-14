@@ -60,4 +60,6 @@ post-install:
 	${MV} ${STAGEDIR}${PREFIX}/etc/netify-fwa/netify-fwa.json \
 		${STAGEDIR}${PREFIX}/etc/netify-fwa/netify-fwa.json.sample
 
+	${RLN} ${STAGEDIR}${PREFIX}/lib/libpf.so.0.0.0 ${STAGEDIR}${PREFIX}/lib/python3.6/lib-dynload/pf.so
+
 .include <bsd.port.mk>
