@@ -157,29 +157,15 @@ class nfa_fw_pf():
 
     # Kill state for entries matching label
 
-    def kill_state_by_label(self, anchor, label):
+    def kill_state_by_label(self, label):
 
-        result = nfa_util.exec(
-            'kill_state_by_label',
-            ['pfctl', '-a', anchor, '-k', 'label', '-k', label]
-        )
-        if result['rc'] == 0:
-            nfa_util.exec_log_output(
-                'kill_state_by_label', result['stderr'], LOG_DEBUG
-            )
+        pf.state_kill_by_label(label)
 
     # Kill state for entries matching host
 
     def kill_state_by_host(self, host):
 
-        result = nfa_util.exec(
-            'kill_state_by_host',
-            ['pfctl', '-k', '0.0.0.0/0', '-k', host]
-        )
-        if result['rc'] == 0:
-            nfa_util.exec_log_output(
-                'kill_state_by_host', result['stderr'], LOG_DEBUG
-            )
+        pf.state_kill_by_host(host)
 
     # Synchronize state
 
@@ -195,11 +181,12 @@ class nfa_fw_pf():
         for anchor in anchors:
             if anchor == 'nfa/00_whitelist':
                 self.table_flush(anchor, 'nfa_whitelist')
-                self.kill_state_by_label(anchor, 'nfa_whitelist')
                 continue
 
             ba_existing.append(anchor)
-            self.kill_state_by_label(anchor, 'nfa_block')
+
+        self.kill_state_by_label('nfa_whitelist')
+        self.kill_state_by_label('nfa_block')
 
         for rule in config_dynamic['rules']:
             if rule['type'] != 'block': continue
@@ -302,7 +289,6 @@ class nfa_fw_pf():
             if anchor == 'nfa/00_whitelist':
                 self.table_flush(anchor, 'nfa_whitelist')
                 self.table_kill(anchor, 'nfa_whitelist')
-                self.kill_state_by_label(anchor, 'nfa_whitelist')
                 continue
 
             self.table_flush(anchor, 'nfa_local')
@@ -310,7 +296,8 @@ class nfa_fw_pf():
             self.table_kill(anchor, 'nfa_local')
             self.table_kill(anchor, 'nfa_remote')
 
-            self.kill_state_by_label(anchor, 'nfa_block')
+        self.kill_state_by_label('nfa_whitelist')
+        self.kill_state_by_label('nfa_block')
 
         self.anchor_flush("nfa")
 
