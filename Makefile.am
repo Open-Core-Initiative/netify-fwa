@@ -1,7 +1,12 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS=deploy pf
+SUBDIRS_EXTRA =
+if USE_PF
+SUBDIRS_EXTRA += pf
+endif
+
+SUBDIRS=deploy $(SUBDIRS_EXTRA)
 
 TEMPLATEFILES = nfa_defaults.py nfa_version.py
 TEMPLATEFILES_IN = nfa_defaults.py.in nfa_version.py.in
