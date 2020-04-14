@@ -2,6 +2,8 @@
 @dir etc/netify-fwa
 @sample etc/netify-fwa/netify-fwa.ini.sample
 @sample etc/netify-fwa/netify-fwa.json.sample
+lib/libpf.so.0.0.0
+lib/python3.6/lib-dynload/pf.so
 pkg/netify-fwa.xml
 pkg/netify-fwa/netify-fwa.inc
 pkg/netify-fwa/netify-fwa_defs.inc

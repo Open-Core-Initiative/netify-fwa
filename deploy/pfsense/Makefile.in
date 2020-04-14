@@ -29,6 +29,7 @@ post-install:
 	${MKDIR} ${STAGEDIR}${PREFIX}/www/netify-fwa/css
 	${MKDIR} ${STAGEDIR}${PREFIX}/www/netify-fwa/icons
 	${MKDIR} ${STAGEDIR}${PREFIX}/www/netify-fwa/js
+	${MKDIR} ${STAGEDIR}${PREFIX}/lib/python3.6/lib-dynload
 
 	${INSTALL_DATA} ${FILESDIR}${DATADIR}/info.xml \
 		${STAGEDIR}${DATADIR}
