@@ -131,30 +131,17 @@ class nfa_fw_pf():
 
         # Try to delete existing entry...
 
-        result = nfa_util.exec(
-            'table_upsert',
-            ['pfctl', '-a', anchor, '-t', table, '-T', 'delete', host]
-        )
+        pf.table_delete(anchor, table, host)
 
         # Insert entry...
 
-        result = nfa_util.exec(
-            'table_upsert',
-            ['pfctl', '-a', anchor, '-t', table, '-T', 'add', host]
-        )
-        if result['rc'] == 0:
-            nfa_util.exec_log_output('table_upsert', result['stderr'], LOG_DEBUG)
+        pf.table_add(anchor, table, host)
 
     # Flush table
 
     def table_flush(self, anchor, table):
 
-        result = nfa_util.exec(
-            'table_flush',
-            ['pfctl', '-a', anchor, '-t', table, '-T', 'flush']
-        )
-        if result['rc'] == 0:
-            nfa_util.exec_log_output('table_flush', result['stderr'], LOG_DEBUG)
+        pf.table_flush(anchor, table)
 
     # Kill table
 
