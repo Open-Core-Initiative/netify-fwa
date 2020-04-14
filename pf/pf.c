@@ -59,6 +59,12 @@ static PyMethodDef pfMethods[] = {
     { "table_kill", nfa_pf_table_kill, METH_VARARGS,
         "Delete a table." },
 
+    { "state_kill_by_host", nfa_pf_state_kill_by_host, METH_VARARGS,
+        "Delete states by host." },
+
+    { "state_kill_by_label", nfa_pf_state_kill_by_label, METH_VARARGS,
+        "Delete states by label." },
+
     { NULL, NULL, 0, NULL }
 };
 
@@ -414,6 +420,7 @@ static int pfr_del_addrs(struct pfr_table *tbl, struct pfr_addr *addr, int size,
     return (0);
 }
 
+#ifdef _PF_DEBUG
 static void print_addrx(const char *prefix, struct pfr_addr *ad, struct pfr_addr *rad)
 {
     char b1[1024], b2[1024];
@@ -454,6 +461,7 @@ static void print_addrx(const char *prefix, struct pfr_addr *ad, struct pfr_addr
 
     nfa_pf_printf(LOG_DEBUG, "%s: %s", prefix, b2);
 }
+#endif // _PF_DEBUG
 
 static PyObject *nfa_pf_table_expire(PyObject *self, PyObject *args)
 {
@@ -500,10 +508,12 @@ static PyObject *nfa_pf_table_expire(PyObject *self, PyObject *args)
     PFRB_FOREACH(as, &b1) {
         as->pfras_a.pfra_fback = PFR_FB_NONE;
         if (as->pfras_tzero != 0 && time(NULL) - as->pfras_tzero > ttl) {
+#ifdef _PF_DEBUG
             nfa_pf_printf(LOG_DEBUG, "%s, %s: (%d - %d) %d > ttl: %d?",
                     anchor, table,
                     time(NULL), as->pfras_tzero,
                     time(NULL) - as->pfras_tzero, ttl);
+#endif
             if (pfr_buf_add(&b2, &as->pfras_a)) {
                 PyErr_SetString(PyExc_ValueError, "table_expire: duplicate error");
                 return NULL;
@@ -513,18 +523,24 @@ static PyObject *nfa_pf_table_expire(PyObject *self, PyObject *args)
     }
 
     if (b2.pfrb_size > 0) {
+#ifdef _PF_DEBUG
         struct pfr_addr *a;
         PFRB_FOREACH(a, &b2) {
             print_addrx("expiring", a, NULL);
         }
-
+#endif
         int expired = 0;
         int rc = pfr_del_addrs(&t, b2.pfrb_caddr, b2.pfrb_size, &expired, flags);
-
+#ifdef _PF_DEBUG
         nfa_pf_printf(LOG_DEBUG,
             "%s: result: %d, expiring: %d (b2 size: %d), expired: %d: %s",
                 __func__, rc, expire, b2.pfrb_size, expired, nfa_pf_strerror());
-
+#else
+        if (rc != -1 && expired) {
+            nfa_pf_printf(LOG_DEBUG,
+                "%s: %s, %s: %d", __func__, anchor, table, expired);
+        }
+#endif
         if (rc) Py_RETURN_FALSE;
     }
 
@@ -1029,4 +1045,161 @@ static PyObject *nfa_pf_table_flush(PyObject *self, PyObject *args)
     }
 
     Py_RETURN_FALSE;
+}
+
+static PyObject *nfa_pf_state_kill_by_label(PyObject *self, PyObject *args)
+{
+    const char *label;
+
+    if (! PyArg_ParseTuple(args, "s:state_kill_by_label", &label))
+        return NULL;
+
+    struct pfioc_state_kill psk;
+    bzero(&psk, sizeof(psk));
+
+    if (strlcpy(psk.psk_label, label, sizeof(psk.psk_label)) >=
+        sizeof(psk.psk_label)) {
+        PyErr_SetString(PyExc_ValueError, "state_kill_by_label: strlcpy");
+        return NULL;
+    }
+
+    if (ioctl(pfDevice, DIOCKILLSTATES, &psk) == -1) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
+
+    if (psk.psk_killed)
+        nfa_pf_printf(LOG_DEBUG, "%s: %s: %d", __func__, label, psk.psk_killed);
+
+    Py_RETURN_TRUE;
+}
+
+static struct addrinfo *pfctl_addrprefix(const char *addr, struct pf_addr *mask)
+{
+    char *p;
+    const char *errstr;
+    int prefix, ret_ga, q, r;
+    struct addrinfo hints, *res;
+
+    bzero(&hints, sizeof(hints));
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_NUMERICHOST;
+
+    if ((p = strchr(addr, '/')) != NULL)
+        *p++ = '\0';
+
+    if ((ret_ga = getaddrinfo(addr, NULL, &hints, &res))) {
+        PyErr_SetString(PyExc_ValueError, gai_strerror(ret_ga));
+        return NULL;
+    }
+
+    if (p == NULL)
+        return res;
+
+    prefix = strtonum(p, 0, res->ai_family == AF_INET6 ? 128 : 32, &errstr);
+    if (errstr) {
+        PyErr_SetString(PyExc_ValueError, errstr);
+        return NULL;
+    }
+
+    q = prefix >> 3;
+    r = prefix & 7;
+    switch (res->ai_family) {
+    case AF_INET:
+        bzero(&mask->v4, sizeof(mask->v4));
+        mask->v4.s_addr = htonl((u_int32_t)
+            (0xffffffffffULL << (32 - prefix)));
+        break;
+    case AF_INET6:
+        bzero(&mask->v6, sizeof(mask->v6));
+        if (q > 0)
+            memset((void *)&mask->v6, 0xff, q);
+        if (r > 0)
+            *((u_char *)&mask->v6 + q) =
+                (0xff00 >> r) & 0xff;
+        break;
+    }
+
+    return res;
+}
+
+static PyObject *nfa_pf_state_kill_by_host(PyObject *self, PyObject *args)
+{
+    const char *host;
+    char mask[16];
+
+    if (! PyArg_ParseTuple(args, "s:state_kill_by_host", &host))
+        return NULL;
+
+    struct pfioc_state_kill psk;
+    bzero(&psk, sizeof(psk));
+    memset(&psk.psk_src.addr.v.a.mask, 0xff, sizeof(psk.psk_src.addr.v.a.mask));
+
+    struct sockaddr last_src, last_dst;
+    memset(&last_src, 0xff, sizeof(last_src));
+    memset(&last_dst, 0xff, sizeof(last_dst));
+
+    int killed, sources, dests;
+    killed = sources = dests = 0;
+
+    struct addrinfo *res[2], *resp[2];
+    strcpy(mask, "0.0.0.0/0");
+    res[0] = pfctl_addrprefix(mask, &psk.psk_src.addr.v.a.mask);
+
+    for (resp[0] = res[0]; resp[0]; resp[0] = resp[0]->ai_next) {
+
+        if (resp[0]->ai_addr == NULL)
+            continue;
+
+        if (memcmp(&last_src, resp[0]->ai_addr, sizeof(last_src)) == 0)
+            continue;
+
+        last_src = *(struct sockaddr *)resp[0]->ai_addr;
+
+        psk.psk_af = resp[0]->ai_family;
+        sources++;
+
+        nfa_pf_copy_satopfaddr(&psk.psk_src.addr.v.a.addr, resp[0]->ai_addr);
+
+        dests = 0;
+
+        memset(&psk.psk_dst.addr.v.a.mask, 0xff, sizeof(psk.psk_dst.addr.v.a.mask));
+        memset(&last_dst, 0xff, sizeof(last_dst));
+
+        res[1] = pfctl_addrprefix(host, &psk.psk_dst.addr.v.a.mask);
+
+        for (resp[1] = res[1]; resp[1]; resp[1] = resp[1]->ai_next) {
+
+            if (resp[1]->ai_addr == NULL)
+                continue;
+
+            if (psk.psk_af != resp[1]->ai_family)
+                continue;
+
+            if (memcmp(&last_dst, resp[1]->ai_addr, sizeof(last_dst)) == 0)
+                continue;
+
+            last_dst = *(struct sockaddr *)resp[1]->ai_addr;
+
+            dests++;
+
+            nfa_pf_copy_satopfaddr(&psk.psk_dst.addr.v.a.addr, resp[1]->ai_addr);
+
+            if (ioctl(pfDevice, DIOCKILLSTATES, &psk) == -1) {
+                PyErr_SetFromErrno(PyExc_IOError);
+                return NULL;
+            }
+
+            killed += psk.psk_killed;
+        }
+
+        freeaddrinfo(res[1]);
+    }
+
+    freeaddrinfo(res[0]);
+
+    if (killed)
+        nfa_pf_printf(LOG_DEBUG, "%s: %s: %d", __func__, host, killed);
+
+    Py_RETURN_TRUE;
 }

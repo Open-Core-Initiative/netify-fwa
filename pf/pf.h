@@ -50,4 +50,7 @@ static PyObject *nfa_pf_table_expire(PyObject *self, PyObject *args);
 static PyObject *nfa_pf_table_flush(PyObject *self, PyObject *args);
 static PyObject *nfa_pf_table_kill(PyObject *self, PyObject *args);
 
+static PyObject *nfa_pf_state_kill_by_host(PyObject *self, PyObject *args);
+static PyObject *nfa_pf_state_kill_by_label(PyObject *self, PyObject *args);
+
 #endif // _PF_H
