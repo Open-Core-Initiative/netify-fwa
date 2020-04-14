@@ -18,6 +18,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <syslog.h>
+#include <netdb.h>
 
 #include "pf.h"
 
@@ -42,6 +43,15 @@ static PyMethodDef pfMethods[] = {
 
     { "anchor_flush", nfa_pf_anchor_flush, METH_VARARGS,
         "Flush rules from anchor." },
+
+    { "table_add", nfa_pf_table_add, METH_VARARGS,
+        "Add entry to a table." },
+
+    { "table_delete", nfa_pf_table_delete, METH_VARARGS,
+        "Delete entry to a table." },
+
+    { "table_flush", nfa_pf_table_flush, METH_VARARGS,
+        "Flush entries from a table." },
 
     { "table_expire", nfa_pf_table_expire, METH_VARARGS,
         "Expire entries from a table." },
@@ -89,6 +99,19 @@ static PyObject *nfa_pf_set_syslog(PyObject *self, PyObject *args)
     return result;
 }
 
+static const char *nfa_pf_strerror(void)
+{
+    switch (errno) {
+    case ESRCH:
+        return "Table doesn't exist";
+    case ENOENT:
+    case EINVAL:
+        return "Anchor doesn't exist";
+    }
+
+    return strerror(errno);
+}
+
 static void nfa_pf_printf(int level, const char *format, ...)
 {
     if (pfCallbackSyslog == NULL) return;
@@ -128,7 +151,7 @@ static PyObject *nfa_pf_open(PyObject *self, PyObject *args)
 
     pfDevice = fd;
     nfa_pf_printf(LOG_DEBUG,
-        "%s: opened device: %s: %d", "open", pfDevicePath, fd);
+        "%s: opened device: %s: %d", __func__, pfDevicePath, fd);
 
     Py_RETURN_TRUE;
 }
@@ -142,7 +165,7 @@ static PyObject *nfa_pf_close(PyObject *self, PyObject *args)
 
     if (close(pfDevice) == 0) {
         nfa_pf_printf(LOG_DEBUG,
-            "%s: closed device: %s: %d", "close", pfDevicePath, pfDevice);
+            "%s: closed device: %s: %d", __func__, pfDevicePath, pfDevice);
     }
     else {
         PyErr_SetFromErrno(PyExc_IOError);
@@ -157,7 +180,6 @@ static PyObject *nfa_pf_close(PyObject *self, PyObject *args)
 
 static PyObject *nfa_pf_status(PyObject *self, PyObject *args)
 {
-    int fd;
     struct pf_status status;
 
     if (ioctl(pfDevice, DIOCGETSTATUS, &status) < 0) {
@@ -170,7 +192,6 @@ static PyObject *nfa_pf_status(PyObject *self, PyObject *args)
 
 static PyObject *nfa_pf_anchor_list(PyObject *self, PyObject *args)
 {
-    int fd;
     const char *anchor;
     struct pfioc_ruleset pr;
     u_int32_t mnr, nr;
@@ -305,7 +326,6 @@ static int pfctl_trans(struct pfr_buffer *buf, u_long cmd, int from)
 
 static PyObject *nfa_pf_anchor_flush(PyObject *self, PyObject *args)
 {
-    int fd;
     const char *anchor;
 
     if (! PyArg_ParseTuple(args, "s:anchor_flush", &anchor))
@@ -431,18 +451,12 @@ static void print_addrx(const char *prefix, struct pfr_addr *ad, struct pfr_addr
         sprintf(b1, " nomatch");
         strcat(b2, b1);
     }
-/*
-    if (ad->pfra_ifname[0] != '\0') {
-        sprintf(b1, "@%s", ad->pfra_ifname);
-        strcat(b2, b1);
-    }
-*/
+
     nfa_pf_printf(LOG_DEBUG, "%s: %s", prefix, b2);
 }
 
 static PyObject *nfa_pf_table_expire(PyObject *self, PyObject *args)
 {
-    int fd;
     const char *anchor;
     const char *table;
     u_int ttl;
@@ -486,7 +500,7 @@ static PyObject *nfa_pf_table_expire(PyObject *self, PyObject *args)
     PFRB_FOREACH(as, &b1) {
         as->pfras_a.pfra_fback = PFR_FB_NONE;
         if (as->pfras_tzero != 0 && time(NULL) - as->pfras_tzero > ttl) {
-            nfa_pf_printf(LOG_DEBUG, "%s/%s: (%d - %d) %d > ttl: %d?",
+            nfa_pf_printf(LOG_DEBUG, "%s, %s: (%d - %d) %d > ttl: %d?",
                     anchor, table,
                     time(NULL), as->pfras_tzero,
                     time(NULL) - as->pfras_tzero, ttl);
@@ -509,7 +523,7 @@ static PyObject *nfa_pf_table_expire(PyObject *self, PyObject *args)
 
         nfa_pf_printf(LOG_DEBUG,
             "%s: result: %d, expiring: %d (b2 size: %d), expired: %d: %s",
-                "table_expire", rc, expire, b2.pfrb_size, expired, strerror(errno));
+                __func__, rc, expire, b2.pfrb_size, expired, nfa_pf_strerror());
 
         if (rc) Py_RETURN_FALSE;
     }
@@ -543,7 +557,6 @@ static int pfr_del_tables(struct pfr_table *tbl, int size, int *ndel, int flags)
 
 static PyObject *nfa_pf_table_kill(PyObject *self, PyObject *args)
 {
-    int fd;
     const char *anchor;
     const char *table;
 
@@ -566,15 +579,454 @@ static PyObject *nfa_pf_table_kill(PyObject *self, PyObject *args)
 
     if (rc == 0) {
         if (killed) {
-            nfa_pf_printf(LOG_DEBUG, "%s: %s/%s", "table_kill", anchor, table);
+            nfa_pf_printf(LOG_DEBUG, "%s: %s, %s", __func__, anchor, table);
             Py_RETURN_TRUE;
         }
     }
     else {
-        nfa_pf_printf(LOG_DEBUG, "%s: %s/%s: %s",
-            "table_kill", anchor, table, strerror(errno));
+        nfa_pf_printf(LOG_DEBUG, "%s: %s, %s: %s",
+            __func__, anchor, table, nfa_pf_strerror());
     }
 
     Py_RETURN_FALSE;
 }
 
+static void nfa_pf_copy_satopfaddr(struct pf_addr *pfa, struct sockaddr *sa)
+{
+    if (sa->sa_family == AF_INET6)
+        pfa->v6 = ((struct sockaddr_in6 *)sa)->sin6_addr;
+    else if (sa->sa_family == AF_INET)
+        pfa->v4 = ((struct sockaddr_in *)sa)->sin_addr;
+}
+
+static void nfa_pf_set_ipmask(struct node_host *h, int bb)
+{
+    struct pf_addr *m, *n;
+    int i, j = 0;
+    u_int8_t b;
+
+    m = &h->addr.v.a.mask;
+    memset(m, 0, sizeof(*m));
+
+    if (bb == -1)
+        b = h->af == AF_INET ? 32 : 128;
+    else
+        b = bb;
+
+    while (b >= 32) {
+        m->addr32[j++] = 0xffffffff;
+        b -= 32;
+    }
+
+    for (i = 31; i > 31-b; --i)
+        m->addr32[j] |= (1 << i);
+
+    if (b)
+        m->addr32[j] = htonl(m->addr32[j]);
+
+    n = &h->addr.v.a.addr;
+    if (h->addr.type == PF_ADDR_ADDRMASK) {
+        for (i = 0; i < 4; i++)
+            n->addr32[i] = n->addr32[i] & m->addr32[i];
+    }
+}
+
+static struct node_host *nfa_pf_host_ip(const char *s, int mask)
+{
+    struct addrinfo hints, *res;
+    struct node_host *h = NULL;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_NUMERICHOST;
+
+    if (getaddrinfo(s, NULL, &hints, &res) == 0) {
+        h = calloc(1, sizeof(*h));
+        if (h == NULL) {
+            nfa_pf_printf(LOG_DEBUG, "%s: calloc, %s",
+                __func__, nfa_pf_strerror());
+            return NULL;
+        }
+
+        h->af = res->ai_family;
+        nfa_pf_copy_satopfaddr(&h->addr.v.a.addr, res->ai_addr);
+
+        if (h->af == AF_INET6)
+            h->ifindex =
+                ((struct sockaddr_in6 *)res->ai_addr)->sin6_scope_id;
+
+        freeaddrinfo(res);
+
+    } else {
+        if (mask == -1)
+            return (NULL);
+
+        h = calloc(1, sizeof(*h));
+        if (h == NULL) {
+            nfa_pf_printf(LOG_DEBUG, "%s: calloc, %s",
+                __func__, nfa_pf_strerror());
+            return NULL;
+        }
+
+        h->af = AF_INET;
+        if (inet_net_pton(AF_INET, s, &h->addr.v.a.addr.v4,
+            sizeof(h->addr.v.a.addr.v4)) == -1) {
+            free(h);
+            return (NULL);
+        }
+    }
+
+    nfa_pf_set_ipmask(h, mask);
+
+    h->ifname = NULL;
+    h->next = NULL;
+    h->tail = h;
+
+    return (h);
+}
+
+static struct node_host *nfa_pf_host(const char *s)
+{
+    int mask = -1;
+    struct node_host *h = NULL, *n;
+    char *p, *ps, *if_name;
+    const char *errstr;
+
+    if ((ps = strdup(s)) == NULL) {
+        nfa_pf_printf(LOG_DEBUG, "%s: strdup, %s",
+            __func__, nfa_pf_strerror());
+        return NULL;
+    }
+
+    if ((if_name = strrchr(ps, '@')) != NULL) {
+        if_name[0] = '\0';
+        if_name++;
+    }
+
+    if ((p = strchr(ps, '/')) != NULL) {
+        mask = strtonum(p + 1, 0, 128, &errstr);
+        if (errstr) {
+            nfa_pf_printf(LOG_DEBUG, "%s: netmask, %s: %s",
+                __func__, errstr, p);
+            goto error;
+        }
+
+        p[0] = '\0';
+    }
+
+    if ((h = nfa_pf_host_ip(ps, mask)) == NULL) {
+        nfa_pf_printf(LOG_DEBUG, "%s: IP address not found: %s",
+            __func__, s);
+        goto error;
+    }
+
+    if (if_name && if_name[0]) {
+        for (n = h; n != NULL; n = n->next) {
+            if ((n->ifname = strdup(if_name)) == NULL) {
+                nfa_pf_printf(LOG_DEBUG, "%s: strdup, %s",
+                    __func__, nfa_pf_strerror());
+                h = NULL;
+                goto error;
+            }
+        }
+    }
+
+    for (n = h; n != NULL; n = n->next) {
+        n->addr.type = PF_ADDR_ADDRMASK;
+        n->weight = 0;
+    }
+
+error:
+    free(ps);
+    return (h);
+}
+
+static int nfa_pf_unmask(struct pf_addr *m)
+{
+    int i = 31, j = 0, b = 0;
+    u_int32_t tmp;
+
+    while (j < 4 && m->addr32[j] == 0xffffffff) {
+        b += 32;
+        j++;
+    }
+
+    if (j < 4) {
+        tmp = ntohl(m->addr32[j]);
+        for (i = 31; tmp & (1 << i); --i)
+            b++;
+    }
+
+    return (b);
+}
+
+static int nfa_pf_append_host(struct pfr_buffer *b, struct node_host *n)
+{
+    int bits;
+    struct pfr_addr addr;
+
+    do {
+        bzero(&addr, sizeof(addr));
+        addr.pfra_af = n->af;
+        addr.pfra_net = nfa_pf_unmask(&n->addr.v.a.mask);
+
+        switch (n->af) {
+        case AF_INET:
+            addr.pfra_ip4addr.s_addr = n->addr.v.a.addr.addr32[0];
+            bits = 32;
+            break;
+        case AF_INET6:
+            memcpy(&addr.pfra_ip6addr, &n->addr.v.a.addr.v6,
+                sizeof(struct in6_addr));
+            bits = 128;
+            break;
+        default:
+            errno = EINVAL;
+            nfa_pf_printf(LOG_DEBUG, "%s: address family: %s",
+                __func__, nfa_pf_strerror());
+            return (-1);
+        }
+
+        if (addr.pfra_net != bits || addr.pfra_net > bits) {
+            nfa_pf_printf(LOG_DEBUG, "%s: network bits: %s",
+                __func__, nfa_pf_strerror());
+            errno = EINVAL;
+            return (-1);
+        }
+
+        if (pfr_buf_add(b, &addr))
+            return (-1);
+
+    } while ((n = n->next) != NULL);
+
+    return (0);
+}
+
+static int pfr_add_tables(struct pfr_table *tbl, int size, int *nadd, int flags)
+{
+    struct pfioc_table io;
+
+    if (size < 0 || (size && tbl == NULL)) {
+        errno = EINVAL;
+        return (-1);
+    }
+
+    bzero(&io, sizeof io);
+    io.pfrio_flags = flags;
+    io.pfrio_buffer = tbl;
+    io.pfrio_esize = sizeof(*tbl);
+    io.pfrio_size = size;
+
+    if (ioctl(pfDevice, DIOCRADDTABLES, &io) == -1)
+        return (-1);
+
+    if (nadd != NULL)
+        *nadd = io.pfrio_nadd;
+
+    return (0);
+}
+
+static int pfr_add_addrs(struct pfr_table *tbl, struct pfr_addr *addr, int size, int *nadd, int flags)
+{
+    struct pfioc_table io;
+
+    if (tbl == NULL || size < 0 || (size && addr == NULL)) {
+        errno = EINVAL;
+        return (-1);
+    }
+
+    bzero(&io, sizeof io);
+    io.pfrio_flags = flags;
+    io.pfrio_table = *tbl;
+    io.pfrio_buffer = addr;
+    io.pfrio_esize = sizeof(*addr);
+    io.pfrio_size = size;
+
+    if (ioctl(pfDevice, DIOCRADDADDRS, &io) == -1)
+        return (-1);
+
+    if (nadd != NULL)
+        *nadd = io.pfrio_nadd;
+
+    return (0);
+}
+
+static PyObject *nfa_pf_table_add(PyObject *self, PyObject *args)
+{
+    const char *anchor;
+    const char *table;
+    const char *host;
+
+    if (! PyArg_ParseTuple(args, "sss:table_add", &anchor, &table, &host))
+        return NULL;
+
+    struct pfr_buffer b1;
+    bzero(&b1, sizeof(b1));
+
+    b1.pfrb_type = PFRB_ADDRS;
+
+    struct pfr_table t;
+    bzero(&t, sizeof(t));
+
+    if (strlcpy(t.pfrt_anchor, anchor,
+            sizeof(t.pfrt_anchor)) >= sizeof(t.pfrt_anchor) ||
+        strlcpy(t.pfrt_name, table,
+            sizeof(t.pfrt_name)) >= sizeof(t.pfrt_name)) {
+        PyErr_SetString(PyExc_ValueError, "table_add: strlcpy");
+        return NULL;
+    }
+
+    t.pfrt_flags |= PFR_TFLAG_PERSIST;
+
+    int flags = 0, table_added = 0;
+    pfr_add_tables(&t, 1, &table_added, flags);
+
+    t.pfrt_flags &= ~PFR_TFLAG_PERSIST;
+
+    struct node_host *nh;
+    if ((nh = nfa_pf_host(host)) == NULL)
+        return NULL;
+
+    if (nfa_pf_append_host(&b1, nh) == -1)
+        return NULL;
+
+    int added = 0;
+    int rc = pfr_add_addrs(&t, b1.pfrb_caddr, b1.pfrb_size, &added, flags);
+
+    if (rc == 0) {
+        if (added) {
+            nfa_pf_printf(LOG_DEBUG, "%s: %s, %s: %s",
+                __func__, anchor, table, host);
+            Py_RETURN_TRUE;
+        }
+    }
+    else {
+        int level = LOG_DEBUG;
+        if (errno != ESRCH && errno != EINVAL && errno != ENOENT)
+            level = LOG_ERR;
+
+        nfa_pf_printf(LOG_ERR, "%s: %s, %s: %s: %s",
+            __func__, anchor, table, host, nfa_pf_strerror());
+    }
+
+    Py_RETURN_FALSE;
+}
+
+static PyObject *nfa_pf_table_delete(PyObject *self, PyObject *args)
+{
+    const char *anchor;
+    const char *table;
+    const char *host;
+
+    if (! PyArg_ParseTuple(args, "sss:table_delete", &anchor, &table, &host))
+        return NULL;
+
+    struct pfr_buffer b1;
+    bzero(&b1, sizeof(b1));
+
+    b1.pfrb_type = PFRB_ADDRS;
+
+    struct pfr_table t;
+    bzero(&t, sizeof(t));
+
+    if (strlcpy(t.pfrt_anchor, anchor,
+            sizeof(t.pfrt_anchor)) >= sizeof(t.pfrt_anchor) ||
+        strlcpy(t.pfrt_name, table,
+            sizeof(t.pfrt_name)) >= sizeof(t.pfrt_name)) {
+        PyErr_SetString(PyExc_ValueError, "table_delete: strlcpy");
+        return NULL;
+    }
+
+    struct node_host *nh;
+    if ((nh = nfa_pf_host(host)) == NULL)
+        return NULL;
+
+    if (nfa_pf_append_host(&b1, nh) == -1)
+        return NULL;
+
+    int deleted = 0, flags = 0;
+    int rc = pfr_del_addrs(&t, b1.pfrb_caddr, b1.pfrb_size, &deleted, flags);
+
+    if (rc == 0) {
+        if (deleted) {
+            nfa_pf_printf(LOG_DEBUG, "%s: %s, %s: %s",
+                __func__, anchor, table, host);
+            Py_RETURN_TRUE;
+        }
+    }
+    else {
+        int level = LOG_DEBUG;
+        if (errno != ESRCH && errno != EINVAL && errno != ENOENT)
+            level = LOG_ERR;
+
+        nfa_pf_printf(LOG_ERR, "%s: %s, %s: %s: %s",
+            __func__, anchor, table, host, nfa_pf_strerror());
+    }
+
+    Py_RETURN_FALSE;
+    return NULL;
+}
+
+static int pfr_clr_addrs(struct pfr_table *tbl, int *ndel, int flags)
+{
+    struct pfioc_table io;
+
+    if (tbl == NULL) {
+        errno = EINVAL;
+        return (-1);
+    }
+
+    bzero(&io, sizeof io);
+    io.pfrio_flags = flags;
+    io.pfrio_table = *tbl;
+
+    if (ioctl(pfDevice, DIOCRCLRADDRS, &io) == -1)
+        return (-1);
+
+    if (ndel != NULL)
+        *ndel = io.pfrio_ndel;
+
+    return (0);
+}
+
+static PyObject *nfa_pf_table_flush(PyObject *self, PyObject *args)
+{
+    const char *anchor;
+    const char *table;
+
+    if (! PyArg_ParseTuple(args, "ss:table_flush", &anchor, &table))
+        return NULL;
+
+    struct pfr_table t;
+    bzero(&t, sizeof(t));
+
+    if (strlcpy(t.pfrt_anchor, anchor,
+            sizeof(t.pfrt_anchor)) >= sizeof(t.pfrt_anchor) ||
+        strlcpy(t.pfrt_name, table,
+            sizeof(t.pfrt_name)) >= sizeof(t.pfrt_name)) {
+        PyErr_SetString(PyExc_ValueError, "table_expire: strlcpy");
+        return NULL;
+    }
+
+    int flushed = 0;
+    int rc = pfr_clr_addrs(&t, &flushed, 0);
+
+    if (rc == 0) {
+        if (flushed) {
+            nfa_pf_printf(LOG_DEBUG, "%s: %s, %s: %d",
+                __func__, anchor, table, flushed);
+            Py_RETURN_TRUE;
+        }
+    }
+    else {
+        int level = LOG_DEBUG;
+        if (errno != ESRCH && errno != EINVAL && errno != ENOENT)
+            level = LOG_ERR;
+
+        nfa_pf_printf(LOG_ERR, "%s: %s, %s: %s",
+            __func__, anchor, table, nfa_pf_strerror());
+    }
+
+    Py_RETURN_FALSE;
+}
