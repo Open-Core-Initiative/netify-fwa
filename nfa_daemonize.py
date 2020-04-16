@@ -1,6 +1,6 @@
 # Netify Firewall Agent
 # Copyright 2007 Jerry Seutter yello (*a*t*) thegeeks.net
-# Copyright (C) 2019 eGloo Incorporated <http://www.egloo.ca>
+# Copyright (C) 2019-2020 eGloo Incorporated <http://www.egloo.ca>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
