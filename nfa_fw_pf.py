@@ -124,6 +124,7 @@ class nfa_fw_pf():
                 nfa_util.exec_log_output('anchor_load', result['stderr'], LOG_DEBUG)
         finally:
             fh.close()
+            os.unlink(fh.name)
 
     # Upsert table host entry
 
