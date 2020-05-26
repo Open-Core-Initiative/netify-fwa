@@ -2,8 +2,8 @@ AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS=systemd
 
-TEMPLATEFILES = netify-fwa.sh
-TEMPLATEFILES_IN = netify-fwa.sh.in
+TEMPLATEFILES = netify-fwa.sh netify-fwa.ini
+TEMPLATEFILES_IN = netify-fwa.sh.in netify-fwa.ini.in
 
 sharedatadir = $(datadir)/$(PACKAGE_TARNAME)
 
@@ -38,4 +38,5 @@ install-exec-hook:
 
 install-data-hook:
 	$(INSTALL) -d -m 0750 $(DESTDIR)$(persistentstatedir)
+	$(INSTALL) -m 0640 $(PACKAGE).ini $(DESTDIR)$(persistentstatedir)
 	$(INSTALL) -m 0640 $(PACKAGE).json $(DESTDIR)$(persistentstatedir)

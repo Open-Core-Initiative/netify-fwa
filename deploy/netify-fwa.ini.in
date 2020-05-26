@@ -1,0 +1,19 @@
+[netify-fwa]
+firewall-engine = iptables
+path-config-dynamic = @persistentstatedir@/netify-fwa.json
+path-status = @volatilestatedir@/status.json
+path-status-matches = @persistentstatedir@/matches.json
+ttl-match = 1200
+
+[iptables]
+mark-bitshift = 11
+mark-mask = 0x800
+
+[netify-agent]
+socket-uri = unix:///var/run/netifyd/netifyd.sock
+
+[netify-api]
+path-app-proto-data = @persistentstatedir@/app-proto-data.json
+path-category-index = @persistentstatedir@/netify-categories.json
+ttl-category-index = 86400
+url = https://api.netify.ai/api/v1
