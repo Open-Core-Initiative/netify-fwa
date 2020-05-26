@@ -1,3 +1,4 @@
+# Netify FWA Global Configuration File
 [netify-fwa]
 firewall-engine = iptables
 path-config-dynamic = @persistentstatedir@/netify-fwa.json
