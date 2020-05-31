@@ -9,6 +9,8 @@ ttl-match = 1200
 [iptables]
 mark-bitshift = 11
 mark-mask = 0x800
+interfaces-external = eth0
+interfaces-internal = eth1
 
 [netify-agent]
 socket-uri = unix:///var/run/netifyd/netifyd.sock
