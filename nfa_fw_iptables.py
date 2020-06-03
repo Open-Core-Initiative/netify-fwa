@@ -201,10 +201,10 @@ class nfa_fw_iptables():
             self.add_chain('mangle', 'NFA_egress', ipv)
 
             # Add jumps to ingress/egress chains
-            for iface in self.interfaces['external']:
+            for iface in ifn_ext:
                 self.add_rule('mangle', 'FORWARD',
                     '-i %s -j NFA_ingress' %(iface), ipv)
-            for iface in self.interfaces['internal']:
+            for iface in ifn_int:
                 self.add_rule('mangle', 'FORWARD',
                     '-i %s -j NFA_egress' %(iface), ipv)
 
@@ -222,15 +222,18 @@ class nfa_fw_iptables():
     # Remove hooks
 
     def remove_hooks(self):
+        ifn_int = self.get_internal_interfaces()
+        ifn_ext = self.get_external_interfaces()
+
         for ipv in [4, 6]:
             if self.chain_exists('mangle', 'NFA_whitelist', ipv):
                 self.delete_rule('mangle', 'FORWARD', '-j NFA_whitelist', ipv)
 
-            for iface in self.interfaces['external']:
+            for iface in ifn_ext:
                 if self.chain_exists('mangle', 'NFA_ingress', ipv):
                     self.delete_rule('mangle', 'FORWARD',
                         '-i %s -j NFA_ingress' %(iface), ipv)
-            for iface in self.interfaces['internal']:
+            for iface in ifn_int:
                 if self.chain_exists('mangle', 'NFA_egress', ipv):
                     self.delete_rule('mangle', 'FORWARD',
                         '-i %s -j NFA_egress' %(iface), ipv)
