@@ -20,6 +20,7 @@ Requires: rh-python36-runtime
 BuildRequires: systemd
 BuildRequires: autoconf >= 2.69
 BuildRequires: automake
+BuildRequires: libtool
 %{?systemd_requires}
 
 %description
