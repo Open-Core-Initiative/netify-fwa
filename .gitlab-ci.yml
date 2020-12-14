@@ -76,6 +76,7 @@ debian 10 build:
   script:
     # Prep build directory
     - mkdir -p debian10/builds debian10/logs
+    - apt update
     - apt install -y automake libtool pkg-config
     # Build packages
     - ./autogen.sh
