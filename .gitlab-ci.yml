@@ -70,6 +70,8 @@ centos 8 build:
 
 debian 10 build:
   stage: build
+  tags:
+    - os-manager
   image: debian:10
   script:
     # Prep build directory
