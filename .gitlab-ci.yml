@@ -51,7 +51,7 @@ centos 8 build:
   script:
     # Prep build directory
     - mkdir -p result centos8/builds centos8/logs
-    - sudo yum -y install automake
+    - sudo yum -y install automake libtool
     # Build packages
     - ./autogen.sh
     - ./configure
