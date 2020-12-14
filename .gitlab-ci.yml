@@ -30,7 +30,7 @@ centos 7 build:
     - make dist
     - rpmbuild -bs ./deploy/rpm/netify-fwa.spec --define "_sourcedir $PWD" --define "_srcrpmdir $PWD"
     - mock -v --old-chroot --resultdir=result *.src.rpm
-    # Copy packags and logs to artifacts
+    # Copy packages and logs to artifacts
     - grep -v DEBUG result/root.log
     - mv result/*rpm centos7/builds/
     - mv result/*log centos7/logs/
@@ -57,7 +57,7 @@ centos 8 build:
     - make dist
     - rpmbuild -bs ./deploy/rpm/netify-fwa.spec --define "_sourcedir $PWD" --define "_srcrpmdir $PWD"
     - mock -v --old-chroot --resultdir=result *.src.rpm
-    # Copy packags and logs to artifacts
+    # Copy packages and logs to artifacts
     - grep -v DEBUG result/root.log
     - mv result/*rpm centos8/builds/
     - mv result/*log centos8/logs/
@@ -68,6 +68,25 @@ centos 8 build:
     - centos8
     expire_in: 1 day
 
+debian 10 build:
+  stage: build
+  image: debian:10
+  script:
+    # Prep build directory
+    - mkdir -p debian10/builds debian10/logs
+    - apt install -y automake libtool pkg-config
+    # Build packages
+    - ./autogen.sh
+    - ./configure
+    - make dist-gzip
+    # Copy packages and logs to artifacts
+    - mv *.tar.gz debian10/builds/
+    - mv config.log debian10/logs/
+  artifacts:
+    when: always
+    paths:
+    - debian10
+    expire_in: 1 day
 
 # -------------------------------------------------------------------------
 # Test stage
