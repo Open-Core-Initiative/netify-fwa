@@ -24,7 +24,7 @@ centos 7 build:
   script:
     # Prep build directory
     - mkdir -p result centos7/builds centos7/logs
-    - sudo yum -y install automake
+    - sudo yum -y install automake libtool
     # Build packages
     - ./autogen.sh
     - ./configure
