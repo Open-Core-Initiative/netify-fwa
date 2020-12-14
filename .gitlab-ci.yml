@@ -68,6 +68,7 @@ centos 8 build:
     - centos8
     expire_in: 1 day
 
+
 debian 10 build:
   stage: build
   tags:
@@ -80,7 +81,7 @@ debian 10 build:
     - apt install -y automake libtool pkg-config
     # Build packages
     - ./autogen.sh
-    - ./configure
+    - ./configure --disable-dependency-tracking
     - make dist-gzip
     # Copy packages and logs to artifacts
     - mv *.tar.gz debian10/builds/
