@@ -1,6 +1,5 @@
 stages:
   - build
-  - test
 
 # -------------------------------------------------------------------------
 # Build stage
@@ -81,13 +80,13 @@ centos 8 build:
 #  script:
 #    - ls -al /
 
-clearos 7 test:
-  stage: test
-  tags:
-    - os-manager
-  image: centos:7
-  script:
-    - rpm -Uvh http://mirrors.egloo.ca/egloo/clearos/7/devel/staging/clearos-release-7-current.noarch.rpm
-    - rpm --import http://download.netify.ai/netify/clearos/7/testing/RPM-GPG-KEY-netify
-    - curl http://download.netify.ai/netify/clearos/7/netify.repo --output /etc/yum.repos.d/netify.repo 
-    - yum -y --nogpgcheck --enablerepo=clearos-centos,clearos-centos-updates,clearos-contribs-testing,netify-testing localinstall centos7/builds/*.rpm
+#clearos 7 test:
+#  stage: test
+#  tags:
+#    - os-manager
+#  image: centos:7
+#  script:
+#    - rpm -Uvh http://mirrors.egloo.ca/egloo/clearos/7/devel/staging/clearos-release-7-current.noarch.rpm
+#    - rpm --import http://download.netify.ai/netify/clearos/7/testing/RPM-GPG-KEY-netify
+#    - curl http://download.netify.ai/netify/clearos/7/netify.repo --output /etc/yum.repos.d/netify.repo 
+#    - yum -y --nogpgcheck --enablerepo=clearos-centos,clearos-centos-updates,clearos-contribs-testing,netify-testing localinstall centos7/builds/*.rpm
