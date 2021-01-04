@@ -65,3 +65,46 @@ deploy-pfsense:
 	make -C deploy/pfsense makesum
 	make -C deploy/pfsense package DISABLE_VULNERABILITIES=yes
 	ls -lh deploy/pfsense/work/pkg/*.txz
+
+dist-git:
+	rm -f $(PACKAGE)-$(VERSION).tar*
+	git archive --prefix=$(PACKAGE)-$(VERSION)/ --output=$(PACKAGE)-$(VERSION).tar HEAD
+	p=`pwd`; (echo .; git submodule foreach) | while read entering path; do \
+		temp="$${path%\'}"; \
+		temp="$${temp#\'}"; \
+		path=$$temp; \
+		[ "$$path" = "" ] && continue; \
+		(cd $$path && \
+			git archive --prefix=$(PACKAGE)-$(VERSION)/$$path/ --output=/tmp/$(PACKAGE)-submodule.tar HEAD && \
+			$(AMTAR) --concatenate --file="$$p/$(PACKAGE)-$(VERSION).tar" /tmp/$(PACKAGE)-submodule.tar && \
+			rm -f /tmp/$(PACKAGE)-submodule.tar \
+		); \
+	done
+	gzip $(PACKAGE)-$(VERSION).tar
+
+if HAVE_OSC
+deploy-osc-update: dist-git
+	./autogen.sh && \
+		./configure --prefix=/usr --includedir=\${prefix}/include \
+		--mandir=\${prefix}/share/man --sysconfdir=/etc --localstatedir=/var
+
+	$(MAKE) clean
+	$(MAKE) -C deploy/debian
+
+	(cd $(HOME)/netify-osc/home\:egloo/netify-fwa && $(osc) update)
+	cp deploy/debian/debian.changelog $(HOME)/netify-osc/home\:egloo/netify-fwa
+	cp deploy/debian/debian.conffiles $(HOME)/netify-osc/home\:egloo/netify-fwa
+	cp deploy/debian/debian.control $(HOME)/netify-osc/home\:egloo/netify-fwa
+	cp deploy/debian/debian.postinst $(HOME)/netify-osc/home\:egloo/netify-fwa
+	chmod a+x $(HOME)/netify-osc/home\:egloo/netify-fwa/debian.postinst
+	cp deploy/debian/debian.rules $(HOME)/netify-osc/home\:egloo/netify-fwa
+	cp deploy/debian/netify-fwa.dsc $(HOME)/netify-osc/home\:egloo/netify-fwa
+	cp deploy/rpm/netify-fwa*.spec $(HOME)/netify-osc/home\:egloo/netify-fwa
+	(cd $(HOME)/netify-osc/home\:egloo/netify-fwa && $(osc) rm --force $(PACKAGE)-*.tar.gz || true)
+	cp $(PACKAGE)-$(VERSION).tar.gz $(HOME)/netify-osc/home\:egloo/netify-fwa
+	(cd $(HOME)/netify-osc/home\:egloo/netify-fwa && $(osc) add $(PACKAGE)-*.tar.gz)
+	(cd $(HOME)/netify-osc/home\:egloo/netify-fwa && $(osc) status)
+
+deploy-osc-commit: deploy-osc-update
+	(cd $(HOME)/netify-osc/home\:egloo/netify-fwa && $(osc) commit -m 'Updated to latest sources.')
+endif

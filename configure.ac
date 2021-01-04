@@ -30,6 +30,8 @@ PKG_PROG_PKG_CONFIG([0.23])
 AC_PROG_CC
 AM_PROG_LIBTOOL
 AC_PROG_INSTALL
+AC_PATH_PROG([osc], [osc])
+AM_CONDITIONAL([HAVE_OSC], [test x$osc != x])
 
 case "${host_os}" in
     freebsd*)
