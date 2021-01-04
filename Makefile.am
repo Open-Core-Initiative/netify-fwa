@@ -19,6 +19,7 @@ CLEANFILES = $(TEMPLATEFILES)
 EXTRA_DIST = \
 	LICENSE \
 	autogen.sh \
+	debian/compat \
 	inotify_simple.py \
 	inotify_test.py \
 	nfa_config.py \

@@ -76,6 +76,7 @@ AC_SUBST([persistentstatedir], [$sysconfdir/netify-fwa])
 AC_SUBST([volatilestatedir], [$localstatedir/run/$PACKAGE_TARNAME])
 
 AC_CONFIG_FILES([Makefile deploy/Makefile deploy/rpm/netify-fwa.spec \
-    pf/Makefile deploy/pfsense/Makefile deploy/systemd/Makefile])
+    pf/Makefile deploy/pfsense/Makefile deploy/systemd/Makefile \
+    deploy/debian/Mailefile])
 
 AC_OUTPUT

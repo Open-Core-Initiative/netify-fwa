@@ -1,0 +1,12 @@
+Source: @PACKAGE_TARNAME@
+Section: net
+Priority: optional
+Maintainer: Darryl Sokoloski <darryl@egloo.ca>
+Build-Depends: debhelper (>= 9), dh-systemd (>= 1.5), systemd, autoconf, automake, bc, build-essential, libtool
+
+Package: @PACKAGE_TARNAME@
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: @PACKAGE_NAME@
+ Netify FWA (Firewall Agent) receives near real-time network flow detections from a companion Netify Agent daemon.  These flows are compared against a dynamic ruleset and when matched a corresponding firewall action is taken (for example, block or prioritize).
+ Report bugs to: @PACKAGE_BUGREPORT@
