@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS=systemd
+SUBDIRS=debian systemd
 
 TEMPLATEFILES = netify-fwa.sh netify-fwa.ini
 TEMPLATEFILES_IN = netify-fwa.sh.in netify-fwa.ini.in

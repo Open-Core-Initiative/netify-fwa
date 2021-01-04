@@ -6,4 +6,4 @@ debian.control
 debian.init
 debian.postinst
 debian.rules
-netifyd.dsc
+netify-fwa.dsc
