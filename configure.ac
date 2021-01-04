@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.69])
-AC_INIT([Netify FWA], [1.2.4],
+AC_INIT([Netify FWA], [1.2.5],
     [https://gitlab.com/netify.ai/public/netify-fwa/issues],
     [netify-fwa], [http://www.netify.ai/])
 AM_INIT_AUTOMAKE([1.9 tar-pax])
