@@ -77,8 +77,11 @@ AS_IF([test "x$with_tmpfilesdir" != "xno"],
 AC_SUBST([persistentstatedir], [$sysconfdir/netify-fwa])
 AC_SUBST([volatilestatedir], [$localstatedir/run/$PACKAGE_TARNAME])
 
-AC_CONFIG_FILES([Makefile deploy/Makefile deploy/rpm/netify-fwa.spec \
-    pf/Makefile deploy/pfsense/Makefile deploy/systemd/Makefile \
-    deploy/debian/Makefile])
+AC_CONFIG_FILES([Makefile deploy/Makefile \
+    deploy/clearos/netify-fwa.spec \
+    deploy/debian/Makefile \
+    pf/Makefile deploy/pfsense/Makefile \
+    deploy/rpm/netify-fwa.spec \
+    deploy/systemd/Makefile])
 
 AC_OUTPUT

@@ -46,27 +46,12 @@ install: build
 
 	dh_auto_install
 
-	rm -rf $(DESTDIR)@bindir@
-	rm -rf $(DESTDIR)@includedir@
-	rm -rf $(DESTDIR)@libdir@/*/*.a
-	rm -rf $(DESTDIR)@libdir@/*/*.la
-	rm -rf $(DESTDIR)@libdir@/*/libndpi*
-	rm -rf $(DESTDIR)@libdir@/*/pkgconfig
-
-	install -d -m 0755 $(DESTDIR)@volatilestatedir@
-	install -d -m 0755 $(DESTDIR)@sysconfdir@/netify-fwa
-
-	chmod a+x $(DESTDIR)@datadir@/*.sh
-
 	dh_systemd_enable
 
 	install -D -m 0755 deploy/debian/debian.init \
 		$(DESTDIR)@sysconfdir@/init.d/@PACKAGE_TARNAME@
 
 	dh_systemd_start
-
-	install -D -m 0644 deploy/@PACKAGE_TARNAME@.default \
-		$(DESTDIR)@sysconfdir@/default/@PACKAGE_TARNAME@
 
 # Build architecture-independent files here.
 binary-indep: build install

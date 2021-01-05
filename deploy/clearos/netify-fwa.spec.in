@@ -15,6 +15,7 @@ BuildArch: noarch
 BuildRoot: /var/tmp/%{name}-%{version}
 Requires: ipset
 Requires: netifyd >= 2.97-1
+Requires: app-firewall-core
 Requires: rh-python36-runtime
 BuildRequires: systemd
 BuildRequires: autoconf >= 2.69
@@ -41,6 +42,9 @@ make install DESTDIR=%{buildroot}
 
 mkdir -p %{buildroot}/run/%{name}
 
+install -D -m 0660 deploy/clearos/%{name}.ini %{buildroot}/%{_sysconfdir}/%{name}/%{name}.ini
+install -D -m 0660 deploy/clearos/10-%{name} %{buildroot}/%{_sysconfdir}/clearos/firewall.d/10-%{name}
+
 # Clean-up
 %clean
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
@@ -64,6 +68,7 @@ mkdir -p %{buildroot}/run/%{name}
 %attr(644,root,root) %{_datarootdir}/%{name}/*.py
 %attr(644,root,root) %{_unitdir}/%{name}.service
 %attr(644,root,root) %{_tmpfilesdir}/%{name}.conf
+%attr(644,root,root) %{_sysconfdir}/clearos/firewall.d/10-%{name}
 %dir /run/%{name}
 %config(noreplace) %attr(644,root,root) %{_sysconfdir}/%{name}/%{name}.ini
 %config(noreplace) %attr(664,root,root) %{_sysconfdir}/%{name}/%{name}.json
