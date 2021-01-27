@@ -144,6 +144,9 @@ def nfa_fw_init():
     elif fw_engine == 'clearos':
         from nfa_fw_clearos import nfa_fw_clearos
         nfa_global.fw = nfa_fw_clearos(nfa_global.config)
+    elif fw_engine == 'openwrt':
+        from nfa_fw_openwrt import nfa_fw_openwrt
+        nfa_global.fw = nfa_fw_openwrt(nfa_global.config)
     elif fw_engine == 'pf':
         from nfa_fw_pf import nfa_fw_pf
         nfa_global.fw = nfa_fw_pf(nfa_global.config)

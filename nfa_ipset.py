@@ -93,11 +93,19 @@ class nfa_ipset():
 
     def upsert(self, other_ip, other_port, local_ip):
 
-        result = nfa_util.exec(
-            'nfa_ipset::upsert',
-            ["ipset", "-exist", "add", self.name,
-                "%s,%d,%s" %(other_ip, other_port, local_ip)]
-        )
+        if self.type == "hash:ip":
+            result = nfa_util.exec(
+                'nfa_ipset::upsert',
+                ["ipset", "-exist", "add", self.name,
+                    "%s" %(other_ip)]
+            )
+        else:
+            result = nfa_util.exec(
+                'nfa_ipset::upsert',
+                ["ipset", "-exist", "add", self.name,
+                    "%s,%d,%s" %(other_ip, other_port, local_ip)]
+            )
+
         if result['rc'] != 0:
             return False
 
