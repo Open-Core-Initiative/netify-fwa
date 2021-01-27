@@ -123,12 +123,13 @@ openwrt 19.07 build:
     - rm -f openwrt-install/usr/share/netify-fwa/nfa_fw_pf.py
     - rm -f openwrt-install/usr/share/netify-fwa/nfa_fw_pfsense.py
     - sed -i -e 's/^firewall-engine.*/firewall-engine = openwrt/' openwrt-install/etc/netify-fwa/netify-fwa.ini
+    - sed -i -e 's/^interfaces-external.*/interfaces-external = eth1/' openwrt-install/etc/netify-fwa/netify-fwa.ini
     - sed -i -e 's/^interfaces-internal.*/interfaces-internal = br-lan/' openwrt-install/etc/netify-fwa/netify-fwa.ini
     - sed -i -e 's/^mark-mask.*/mark-mask = 0xff0000/' openwrt-install/etc/netify-fwa/netify-fwa.ini
     - sed -i -e 's/^mark-bitshift.*/mark-bitshift = 16/' openwrt-install/etc/netify-fwa/netify-fwa.ini
     - tar -czvf netify-fwa.tar.gz -C openwrt-install .
     # Copy packages and logs to artifacts
-    - mv ../*.tar.gz openwrt1907/builds/
+    - mv netify-fwa.tar.gz openwrt1907/builds/
   artifacts:
     when: always
     paths:
