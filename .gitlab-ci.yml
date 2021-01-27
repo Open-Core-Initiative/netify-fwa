@@ -102,7 +102,7 @@ openwrt 19.07 build:
     # Prep build directory
     - mkdir -p openwrt1907/builds openwrt1907/logs
     - apt update
-    - apt install -y rsync autoconf automake make libtool
+    - apt install -y rsync autoconf automake make libtool pkg-config
     # OpenWrt driver
     # Build packages
     - ./autogen.sh
