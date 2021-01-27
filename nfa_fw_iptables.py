@@ -256,8 +256,8 @@ class nfa_fw_iptables():
             self.flush_chain('mangle', 'NFA_block', ipv)
             self.delete_chain('mangle', 'NFA_block', ipv)
 
-        for name in nfa_ipset.nfa_ipset_list():
-            nfa_ipset.nfa_ipset_destroy(name)
+            for name in nfa_ipset.nfa_ipset_list(ipv):
+                nfa_ipset.nfa_ipset_destroy(name)
 
     # Synchronize state
 
