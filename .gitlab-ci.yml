@@ -128,7 +128,7 @@ openwrt 19.07 build:
     - sed -i -e 's/^mark-bitshift.*/mark-bitshift = 16/' openwrt-install/etc/netify-fwa/netify-fwa.ini
     - tar -czvf netify-fwa.tar.gz -C openwrt-install .
     # Copy packages and logs to artifacts
-     - mv ../*.tar.gz openwrt1907/builds/
+    - mv ../*.tar.gz openwrt1907/builds/
   artifacts:
     when: always
     paths:
