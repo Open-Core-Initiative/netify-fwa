@@ -116,7 +116,9 @@ openwrt 19.07 build:
     - mkdir -p openwrt-install/var/run/netify-fwa
     - cp deploy/openwrt/netify-fwa.init openwrt-install/etc/init.d/netify-fwa
     - cp deploy/openwrt-install/etc/netify-fwa/* openwrt-install/etc/netify-fwa/
-    - cp deploy/openwrt-install/usr/sbin/netify-fwa openwrt-install/usr/sbin/netify-fwa
+    # Temporary workaround for init issues
+    #- cp deploy/openwrt-install/usr/sbin/netify-fwa openwrt-install/usr/sbin/netify-fwa
+    - cp deploy/openwrt/netify-fwa.sh openwrt-install/usr/sbin/netify-fwa
     - rm -f openwrt-install/usr/share/netify-fwa/nfa_fw_clearos.py
     - rm -f openwrt-install/usr/share/netify-fwa/nfa_fw_firewalld.py
     - rm -f openwrt-install/usr/share/netify-fwa/nfa_fw_clearos.py
