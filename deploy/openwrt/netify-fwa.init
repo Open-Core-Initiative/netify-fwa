@@ -14,8 +14,9 @@ PID_FILE=/var/run/netify-fwa/netify-fwa.pid
 start_service() {
     mkdir -p /var/run/netify-fwa
 
+    # FIXME: review -d
     procd_open_instance
-    procd_set_param command $PROG
+    procd_set_param command $PROG -d
     procd_set_param pidfile $PID_FILE
     procd_set_param file /etc/netify-fwa/netify-fwa.json
     procd_set_param respawn
