@@ -108,7 +108,7 @@ def nfa_cat_index_refresh(config_cat_index, ttl_cat_index):
 
     return None
 
-def nfa_cat_index_reload(config_cat_index, task_cat_update):
+def nfa_cat_index_reload(config_cat_index, config_app_proto, task_cat_update):
 
     if not task_cat_update.is_alive():
 
@@ -118,10 +118,13 @@ def nfa_cat_index_reload(config_cat_index, task_cat_update):
             syslog(LOG_DEBUG, "Failed to update category index.")
         else:
             cat_index = nfa_config.load_cat_index(config_cat_index)
+            app_proto = nfa_config.load_app_proto(config_app_proto)
 
             if cat_index is not None:
                 syslog("Reloaded category index.")
                 nfa_global.config_cat_index = cat_index
+                nfa_global.config_app_proto = app_proto
+                nfa_global.config_reload = True
 
         return None
 
@@ -231,11 +234,15 @@ def nfa_main():
 
     task_cat_index_update = None
 
+    config_app_proto = nfa_global.config.get('netify-api', 'path-app-proto-data')
     config_cat_index = nfa_global.config.get('netify-api', 'path-category-index')
     ttl_cat_index = nfa_global.config.get('netify-api', 'ttl-category-index')
 
     if os.path.isfile(config_cat_index):
         nfa_global.config_cat_index = nfa_config.load_cat_index(config_cat_index)
+
+    if os.path.isfile(config_app_proto):
+        nfa_global.config_app_proto = nfa_config.load_app_proto(config_app_proto)
 
     wd = None
     if nfa_global.fw.flavor == 'iptables':
@@ -286,7 +293,7 @@ def nfa_main():
             task_cat_index_update = nfa_cat_index_refresh(config_cat_index, ttl_cat_index)
 
         if task_cat_index_update is not None:
-            task_cat_index_update = nfa_cat_index_reload(config_cat_index, task_cat_index_update)
+            task_cat_index_update = nfa_cat_index_reload(config_cat_index, config_app_proto, task_cat_index_update)
 
         if nfa_global.expire_matches:
             nfa_global.fw.expire_matches()

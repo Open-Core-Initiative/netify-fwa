@@ -10,28 +10,32 @@ import nfa_defaults
 import nfa_global
 
 def criteria(rule):
-    criteria = []
-    if 'protocol' in rule:
-        criteria.append(str(rule['protocol']))
-    else:
-        criteria.append(str(0))
+    criteria = '';
 
-    if 'protocol_category' in rule:
-        criteria.append(str(rule['protocol_category']))
-    else:
-        criteria.append(str(0))
+    if 'protocol_tag' in rule:
+        criteria = 'PROTO_' + rule['protocol_tag'].replace('-', '_')
+    elif 'protocol' in rule:
+        criteria = 'PROTO_' + str(rule['protocol'])
 
-    if 'application' in rule:
-        criteria.append(str(rule['application']))
-    else:
-        criteria.append(str(0))
+    elif 'protocol_category_tag' in rule:
+        criteria = 'PROTOCAT_' + rule['protocol_category_tag'].replace('-', '_')
+    elif 'protocol_category' in rule:
+        criteria = 'PROTOCAT_' + str(rule['protocol_category'])
 
-    if 'application_category' in rule:
-        criteria.append(str(rule['application_category']))
-    else:
-        criteria.append(str(0))
+    elif 'application_tag' in rule:
+        criteria = 'APP_' + re.sub(r'^netify.', r'', rule['application_tag']).replace('-', '_')
+    elif 'application' in rule:
+        criteria = 'APP_' + str(rule['application'])
 
-    return '_'.join(criteria)
+    elif 'application_category_tag' in rule:
+        criteria = 'APPCAT_' + rule['application_category_tag'].replace('-', '_')
+    elif 'application_category' in rule:
+        criteria = 'APPCAT_' + str(rule['application_category'])
+
+    else:
+        criteria = 'RAW_'
+
+    return criteria
 
 def flow_matches(flow, rule):
     if nfa_global.rx_app_id is None:

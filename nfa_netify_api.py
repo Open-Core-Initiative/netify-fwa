@@ -60,21 +60,23 @@ def get_data(url):
     if data['status_code'] != 0:
         return None
 
-    if 'data_info' not in data:
-        return None
-
-    data_info = data['data_info']
-
-    if 'total_pages' not in data_info:
-        return None
-
-    total_pages = data_info['total_pages']
-
-    if 'data_options' in data:
-        options = data['data_options']
-
     if 'data' not in data:
         return None
+
+    # Unpaginated small datasets vs paginated large datasets
+    if 'data_info' not in data:
+        total_pages = 1
+        options = []
+    else:
+        data_info = data['data_info']
+
+        if 'total_pages' not in data_info:
+            return None
+
+        total_pages = data_info['total_pages']
+
+        if 'data_options' in data:
+            options = data['data_options']
 
     pages.append(data['data'])
 

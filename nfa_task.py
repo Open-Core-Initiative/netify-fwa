@@ -37,6 +37,8 @@ class cat_update(threading.Thread):
     def run(self):
         pages_protocols = []
         pages_applications = []
+        protocol_categories = []
+        application_categories = []
 
         url_api = self.config.get('netify-api', 'url')
 
@@ -55,6 +57,20 @@ class cat_update(threading.Thread):
             if pages_applications is None or nfa_global.should_terminate:
                 return
 
+            protocol_categories = nfa_netify_api.get_data(
+                url_api + '/lookup/protocol_categories'
+            )
+
+            if protocol_categories is None or nfa_global.should_terminate:
+                return
+
+            application_categories = nfa_netify_api.get_data(
+                url_api + '/lookup/application_categories'
+            )
+
+            if application_categories is None or nfa_global.should_terminate:
+                return
+
         except socket.gaierror as e:
             syslog(LOG_WARNING,
                 "Netify API request failed: %s: %s [%d]" %(url_api, e.errstr, e.errno))
@@ -62,19 +78,26 @@ class cat_update(threading.Thread):
 
         metadata = {
             'applications': {}, 'protocols': {},
-            'application_category': {}, 'protocol_category': {}
+            'application_tags': {}, 'protocol_tags': {},
+            'application_category': {}, 'protocol_category': {},
+            'application_category_tags': {}, 'protocol_category_tags': {}
         }
 
-        if 'protocol_category' in pages_protocols[0]:
-            for i, entry in enumerate(pages_protocols[0]['protocol_category']):
-                metadata['protocol_category'][entry] = {
-                    'label': pages_protocols[0]['protocol_category'][entry]
+        for page in protocol_categories[1]:
+            for category in page:
+                metadata['protocol_category_tags'][category['tag']] = category['id']
+                metadata['protocol_category'][category['id']] = {
+                    'tag': category['tag'],
+                    'label': category['label'],
                 }
 
-        if 'application_category' in pages_applications[0]:
-            for i, entry in enumerate(pages_applications[0]['application_category']):
-                metadata['application_category'][entry] = {
-                    'label': pages_applications[0]['application_category'][entry]
+
+        for page in application_categories[1]:
+            for category in page:
+                metadata['application_category_tags'][category['tag']] = category['id']
+                metadata['application_category'][category['id']] = {
+                    'tag': category['tag'],
+                    'label': category['label'],
                 }
 
         proto_index = {}
@@ -90,7 +113,10 @@ class cat_update(threading.Thread):
 
                 proto_index[proto['id']] = proto['protocol_category']['id'];
 
+                metadata['protocol_tags'][proto['tag']] = proto['id']
+
                 metadata['protocols'][proto['id']] = {
+                    'tag': proto['tag'],
                     'label': proto['label'],
                 }
 
@@ -109,7 +135,10 @@ class cat_update(threading.Thread):
 
                 app_index[app['id']] = app['application_category']['id'];
 
+                metadata['application_tags'][app['tag']] = app['id']
+
                 metadata['applications'][app['id']] = {
+                    'tag': app['tag'],
                     'label': app['label'],
                     'icon': app['favicon']
                 }

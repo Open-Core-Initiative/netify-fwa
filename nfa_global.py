@@ -29,6 +29,7 @@ expire_matches = False
 config = None
 config_dynamic = None
 config_cat_index = None
+config_app_proto = None
 
 log_options = LOG_PID | LOG_PERROR
 
