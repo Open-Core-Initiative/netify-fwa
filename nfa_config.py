@@ -186,33 +186,34 @@ def load_dynamic(path):
         # - rule['application'] = ID
         # - rule['application_tag'] = 'netyify.app'
 
-        if 'application' in rule and isinstance(rule['application'], str):
-            # Add netify prefix if no prefix exists
-            if "." not in rule['application']:
-                rule['application'] = 'netify.' + rule['application']
+        if nfa_global.config_app_proto is not None:
+            if 'application' in rule and isinstance(rule['application'], str):
+                # Add netify prefix if no prefix exists
+                if "." not in rule['application']:
+                    rule['application'] = 'netify.' + rule['application']
 
-            if nfa_global.config_app_proto is not None and rule['application'] in nfa_global.config_app_proto['application_tags']:
-                rule['application_tag'] = rule['application']
-                rule['application'] = nfa_global.config_app_proto['application_tags'][rule['application']]
-                parsed_rules.append(rule)
+                if 'application_tags' in nfa_global.config_app_proto and rule['application'] in nfa_global.config_app_proto['application_tags']:
+                    rule['application_tag'] = rule['application']
+                    rule['application'] = nfa_global.config_app_proto['application_tags'][rule['application']]
+                    parsed_rules.append(rule)
 
-        elif 'protocol' in rule and isinstance(rule['protocol'], str):
-            if nfa_global.config_app_proto is not None and rule['protocol'] in nfa_global.config_app_proto['protocol_tags']:
-                rule['protocol_tag'] = rule['protocol']
-                rule['protocol'] = nfa_global.config_app_proto['protocol_tags'][rule['protocol']]
-                parsed_rules.append(rule)
+            elif 'protocol' in rule and isinstance(rule['protocol'], str):
+                if 'protocol_tags' in nfa_global.config_app_proto and rule['protocol'] in nfa_global.config_app_proto['protocol_tags']:
+                    rule['protocol_tag'] = rule['protocol']
+                    rule['protocol'] = nfa_global.config_app_proto['protocol_tags'][rule['protocol']]
+                    parsed_rules.append(rule)
 
-        elif 'application_category' in rule and isinstance(rule['application_category'], str):
-            if nfa_global.config_app_proto is not None and rule['application_category'] in nfa_global.config_app_proto['application_category_tags']:
-                rule['application_category_tag'] = rule['application_category']
-                rule['application_category'] = nfa_global.config_app_proto['application_category_tags'][rule['application_category']]
-                parsed_rules.append(rule)
+            elif 'application_category' in rule and isinstance(rule['application_category'], str):
+                if 'application_category_tags' in nfa_global.config_app_proto and rule['application_category'] in nfa_global.config_app_proto['application_category_tags']:
+                    rule['application_category_tag'] = rule['application_category']
+                    rule['application_category'] = nfa_global.config_app_proto['application_category_tags'][rule['application_category']]
+                    parsed_rules.append(rule)
 
-        elif 'protocol_category' in rule and isinstance(rule['protocol_category'], str):
-            if nfa_global.config_app_proto is not None and rule['protocol_category'] in nfa_global.config_app_proto['protocol_category_tags']:
-                rule['protocol_category_tag'] = rule['protocol_category']
-                rule['protocol_category'] = nfa_global.config_app_proto['protocol_category_tags'][rule['protocol_category']]
-                parsed_rules.append(rule)
+            elif 'protocol_category' in rule and isinstance(rule['protocol_category'], str):
+                if 'protocol_category_tags' in nfa_global.config_app_proto and rule['protocol_category'] in nfa_global.config_app_proto['protocol_category_tags']:
+                    rule['protocol_category_tag'] = rule['protocol_category']
+                    rule['protocol_category'] = nfa_global.config_app_proto['protocol_category_tags'][rule['protocol_category']]
+                    parsed_rules.append(rule)
 
         else:
             parsed_rules.append(rule)
