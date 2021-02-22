@@ -70,7 +70,14 @@ class nfa_fw_openwrt(nfa_fw_iptables):
             return self.nfa_config.get('iptables', 'interfaces-external').split(',')
 
     def get_internal_interfaces(self):
-        return ['br-lan']
+        result = nfa_util.exec(
+            'nfa_fw_openwrt::get_external_interfaces', ["uci", "get", "network.lan.ifname"]
+        )
+
+        if result['rc'] == 0:
+            return [result['stdout']]
+        else:
+            return self.nfa_config.get('iptables', 'interfaces-internal').split(',')
 
     # Synchronize state
 
