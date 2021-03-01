@@ -175,7 +175,7 @@ def nfa_fw_init():
 
     nfa_global.fw.remove_hooks()
 
-    return nfa_global.fw.install_hooks()
+    return True # nfa_global.fw.install_hooks()
 
 def nfa_process_agent_status(status):
 

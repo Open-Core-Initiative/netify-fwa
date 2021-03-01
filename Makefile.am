@@ -27,6 +27,7 @@ EXTRA_DIST = \
 	nfa_fw_clearos.py \
 	nfa_fw_firewalld.py \
 	nfa_fw_iptables.py \
+	nfa_fw_openwrt.py \
 	nfa_fw_pf.py \
 	nfa_fw_pfsense.py \
 	nfa_global.py \

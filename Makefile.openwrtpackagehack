@@ -1,0 +1,122 @@
+#
+# This is free software, licensed under the GNU General Public License v2.
+#
+
+include $(TOPDIR)/rules.mk
+
+PKG_NAME:=netify-fwa
+PKG_SOURCE_VERSION:=fe6f997d83971b75b2fb749cf5249341998d9fe7
+PKG_VERSION:=0.99
+PKG_RELEASE:=1
+
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://gitlab.com/ldir/netify-fwa.git
+PKG_MIRROR_HASH:=b941c4111bed06704e01d3792491419e313eb3ccad9939326fca31f4e39ed6ba
+
+PKG_LICENSE:=GPLv3
+sysconfdir=
+sharedatadir=$(datadir)/$(PACKAGE_TARNAME)
+persistentstatedir=/etc/netify-fwa
+volatilestatedir=/var/run/netify-fwa
+
+
+include $(INCLUDE_DIR)/package.mk
+
+define Package/netify-fwa
+  SECTION:=net
+  CATEGORY:=Network
+  DEPENDS:=+netifyd +python3-email +python3-ctypes +python3-codecs
+  TITLE:=netify-fwa - Netify Firewall Agent
+  PKGARCH:=all
+endef
+
+define Package/netify-fwa/description
+  netify firewall agent - using python3
+endef
+
+CONFIGURE_ARGS+=
+
+define Build/Configure
+	(cd $(PKG_BUILD_DIR); ./autogen.sh)
+	$(call Build/Configure/Default,$(CONFIGURE_ARGS))
+endef
+
+define Package/netify-fwa/conffiles
+/etc/netify-fwa/netify-fwa.json
+/etc/netify-fwa/netify-fwa.ini
+endef
+
+# make the persistent stuff volatile to reduce flash wear
+define Package/netify-fwa/install
+	$(SED) 's|[@]sbindir@|$(sbindir)|g' \
+		-e 's|[@]sharedatadir@|$(sharedatadir)|g' \
+		-e 's|[@]PACKAGE_NAME@|$(PACKAGE_NAME)|g' \
+		-e 's|[@]PACKAGE_TARNAME@|$(PACKAGE_TARNAME)|g' \
+		-e 's|[@]PACKAGE_VERSION@|$(PACKAGE_VERSION)|g' \
+		-e 's|[@]sysconfdir@|$(sysconfdir)|g' \
+		-e 's|[@]persistentstatedir@|$(persistentstatedir)|g' \
+		-e 's|[@]volatilestatedir@|$(volatilestatedir)|g' \
+		$(PKG_BUILD_DIR)/nfa_defaults.py.in
+
+	$(SED) 's|[@]sbindir@|$(sbindir)|g' \
+		-e 's|[@]sharedatadir@|$(sharedatadir)|g' \
+		-e 's|[@]PACKAGE_NAME@|$(PACKAGE_NAME)|g' \
+		-e 's|[@]PACKAGE_TARNAME@|$(PACKAGE_TARNAME)|g' \
+		-e 's|[@]PACKAGE_VERSION@|$(PACKAGE_VERSION)|g' \
+		-e 's|[@]sysconfdir@|$(sysconfdir)|g' \
+		-e 's|[@]persistentstatedir@|$(volatilestatedir)|g' \
+		-e 's|[@]volatilestatedir@|$(volatilestatedir)|g' \
+		-e 's/^firewall-engine.*/firewall-engine = openwrt/' \
+		$(PKG_BUILD_DIR)/deploy/netify-fwa.ini.in
+
+	$(SED) 's|[@]sbindir@|$(sbindir)|g' \
+		-e 's|[@]sharedatadir@|$(sharedatadir)|g' \
+		-e 's|[@]PACKAGE_NAME@|$(PACKAGE_NAME)|g' \
+		-e 's|[@]PACKAGE_TARNAME@|$(PACKAGE_TARNAME)|g' \
+		-e 's|[@]PACKAGE_VERSION@|$(PACKAGE_VERSION)|g' \
+		-e 's|[@]sysconfdir@|$(sysconfdir)|g' \
+		-e 's|[@]persistentstatedir@|$(volatilestatedir)|g' \
+		-e 's|[@]volatilestatedir@|$(volatilestatedir)|g' \
+		-e 's/^firewall-engine.*/firewall-engine = openwrt/' \
+		$(PKG_BUILD_DIR)/nfa_version.py.in
+
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(CP) $(PKG_BUILD_DIR)/deploy/openwrt/netify-fwa.init  $(1)/etc/init.d/netify-fwa
+
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/deploy/openwrt/netify-fwa $(1)/usr/sbin/
+
+	$(INSTALL_DIR) $(1)/usr/share/netify-fwa
+	${CP} $(PKG_BUILD_DIR)/inotify_simple.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/inotify_test.py $(1)/usr/share/netify-fwa/
+
+	${CP} $(PKG_BUILD_DIR)/nfa_config.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_daemonize.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_global.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_ipset.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_fw_iptables.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_main.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_netify_api.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_netifyd.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_rule.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_task.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_timer.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_util.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_netifyd.py $(1)/usr/share/netify-fwa/
+	${CP} $(PKG_BUILD_DIR)/nfa_fw_openwrt.py $(1)/usr/share/netify-fwa/
+#needs sedding
+	${CP} $(PKG_BUILD_DIR)/nfa_defaults.py.in $(1)/usr/share/netify-fwa/nfa_defaults.py
+	${CP} $(PKG_BUILD_DIR)/nfa_version.py.in $(1)/usr/share/netify-fwa/nfa_version.py
+
+	$(INSTALL_DIR) $(1)/etc/netify-fwa
+#needs sedding
+	$(CP) $(PKG_BUILD_DIR)/deploy/netify-fwa.ini.in  $(1)/etc/netify-fwa/netify-fwa.ini
+	$(CP) $(PKG_BUILD_DIR)/deploy/netify-fwa.json  $(1)/etc/netify-fwa/
+	$(CP) $(PKG_BUILD_DIR)/deploy/openwrt/app-proto-data.json $(1)/etc/netify-fwa/
+	$(CP) $(PKG_BUILD_DIR)/deploy/openwrt/netify-categories.json $(1)/etc/netify-fwa/
+
+
+endef
+
+$(eval $(call BuildPackage,netify-fwa))
+

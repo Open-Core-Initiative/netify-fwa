@@ -154,7 +154,7 @@ def load_dynamic(path):
     if not key_exists(config, name, 'whitelist', False):
         config['whitelist'] = []
 
-    valid_rule_types = [ 'ipset', 'mark', 'block', 'prioritize' ]
+    valid_rule_types = [ 'ipset', 'prioipset', 'mark', 'block', 'prioritize' ]
 
     parsed_rules = []
 

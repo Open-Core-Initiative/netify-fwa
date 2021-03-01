@@ -12,7 +12,9 @@ import nfa_global
 def criteria(rule):
     criteria = '';
 
-    if 'protocol_tag' in rule:
+    if rule['type'] == 'prioipset':
+        criteria = 'PRIO_' +  str(rule['priority'])
+    elif 'protocol_tag' in rule:
         criteria = 'PROTO_' + rule['protocol_tag'].replace('-', '_')
     elif 'protocol' in rule:
         criteria = 'PROTO_' + str(rule['protocol'])
