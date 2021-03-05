@@ -42,8 +42,14 @@ rm -f openwrt-root/usr/share/netify-fwa/nfa_fw_pfsense.py
 # Package
 #---------------------------------------------------------------
 
+if [ -z "$1" ]; then
+    VERSION=`hostname`
+else
+    VERSION=$1
+fi
+
 ROOT="openwrt-package"
-TARGET="$ROOT/netify-fwa-@PACKAGE_VERSION@.ipk"
+TARGET="$ROOT/netify-fwa-1.2.5-$VERSION.ipk"
 PKG_ROOT="$ROOT/package"
 
 rm -rf $PKG_ROOT
