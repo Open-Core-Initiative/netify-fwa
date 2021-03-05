@@ -4,14 +4,15 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=netify-fwa
-PKG_SOURCE_VERSION:=7d921e7ad9557ae62a8e19ac3415c230db106b8b
-PKG_VERSION:=0.99
+PKG_NAME:=@PACKAGE_TARNAME@
+PKG_SOURCE_VERSION:=v@PACKAGE_VERSION@
+PKG_VERSION:=v@PACKAGE_VERSION@
 PKG_RELEASE:=1
+PKG_MAINTAINER:=Darryl Sokoloski <darryl@egloo.ca>
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://gitlab.com/ldir/netify-fwa.git
-PKG_MIRROR_HASH:=65e9ff7a456c3d5aae2ee89a4bade10ee264aeeeef1cebd62eaab66a41ab49cb
+PKG_MIRROR_HASH:=whatever
 
 PKG_LICENSE:=GPLv3
 sysconfdir=
@@ -25,13 +26,15 @@ include $(INCLUDE_DIR)/package.mk
 define Package/netify-fwa
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:=+netifyd +python3-email +python3-ctypes +python3-codecs
+  DEPENDS:=+netifyd +ipset +python3-urllib +python3-openssl +python3-codecs +python3-ctypes
   TITLE:=netify-fwa - Netify Firewall Agent
   PKGARCH:=all
 endef
 
 define Package/netify-fwa/description
-  netify firewall agent - using python3
+Netify Firewall Agent provides layer-7 hooks for iptables, ipset, QoS and
+other network tools.  You can find more information on the following web page: 
+https://www.netify.ai/developer/netify-agent/netify-firewall-agent
 endef
 
 define Package/netify-fwa/conffiles
@@ -116,4 +119,3 @@ define Package/netify-fwa/install
 endef
 
 $(eval $(call BuildPackage,netify-fwa))
-

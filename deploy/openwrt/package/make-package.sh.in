@@ -1,0 +1,65 @@
+#!/bin/sh -x
+
+#---------------------------------------------------------------
+# Install
+#---------------------------------------------------------------
+
+# TODO: convert to a Makefile
+make DESTDIR=openwrt-root install
+
+# Directory skeleton
+mkdir -p openwrt-root/etc/init.d
+mkdir -p openwrt-root/etc/netify-fwa
+mkdir -p openwrt-root/usr/sbin
+mkdir -p openwrt-root/var/run/netify-fwa
+
+# Copy OpenWrt files
+cp deploy/openwrt/files/netify-fwa.init openwrt-root/etc/init.d/netify-fwa
+cp deploy/openwrt/files/app-proto-data.json openwrt-root/etc/netify-fwa/
+cp deploy/openwrt/files/netify-categories.json openwrt-root/etc/netify-fwa/
+
+# Copy build files, tweak parameters for OpenWrt
+cp deploy/openwrt-root/etc/netify-fwa/* openwrt-root/etc/netify-fwa/
+cp deploy/openwrt-root/usr/sbin/netify-fwa openwrt-root/usr/sbin/netify-fwa
+sed -i -e 's/^firewall-engine.*/firewall-engine = openwrt/' openwrt-root/etc/netify-fwa/netify-fwa.ini
+sed -i -e 's/^interfaces-external.*/interfaces-external = eth1/' openwrt-root/etc/netify-fwa/netify-fwa.ini
+sed -i -e 's/^interfaces-internal.*/interfaces-internal = br-lan/' openwrt-root/etc/netify-fwa/netify-fwa.ini
+sed -i -e 's/^mark-mask.*/mark-mask = 0xff0000/' openwrt-root/etc/netify-fwa/netify-fwa.ini
+sed -i -e 's/^mark-bitshift.*/mark-bitshift = 16/' openwrt-root/etc/netify-fwa/netify-fwa.ini
+
+# Remove unused drivers
+rm -f openwrt-root/usr/share/netify-fwa/nfa_fw_clearos.py
+rm -f openwrt-root/usr/share/netify-fwa/nfa_fw_firewalld.py
+rm -f openwrt-root/usr/share/netify-fwa/nfa_fw_clearos.py
+rm -f openwrt-root/usr/share/netify-fwa/nfa_fw_pf.py
+rm -f openwrt-root/usr/share/netify-fwa/nfa_fw_pfsense.py
+
+#---------------------------------------------------------------
+# Package
+#---------------------------------------------------------------
+
+ROOT="openwrt-package"
+TARGET="$ROOT/netify-fwa-@PACKAGE_VERSION@.ipk"
+PKG_ROOT="$ROOT/package"
+
+rm -rf $PKG_ROOT
+mkdir -p $PKG_ROOT
+
+# OpenWrt root files
+tar --owner=root --group=root -C openwrt-root -czf $PKG_ROOT/data.tar.gz .
+
+# OpenWrt meta/install files
+cp deploy/openwrt/package/control $PKG_ROOT/control
+cp deploy/openwrt/package/postinst $PKG_ROOT/postinst
+cp deploy/openwrt/package/prerm $PKG_ROOT/prerm
+cp deploy/openwrt/package/conffiles $PKG_ROOT/conffiles
+
+# Package it
+tar --owner=root --group=root -C $PKG_ROOT --exclude=control.tar.gz --exclude=data.tar.gz -czf $PKG_ROOT/control.tar.gz .
+rm $PKG_ROOT/control $PKG_ROOT/postinst $PKG_ROOT/prerm
+echo "2.0\n" > $PKG_ROOT/debian-binary
+
+[ -f $TARGET ] && rm $TARGET
+tar --owner=root --group=root -C $PKG_ROOT -czf $TARGET ./debian-binary ./data.tar.gz ./control.tar.gz
+
+rm -rf $PKG_ROOT

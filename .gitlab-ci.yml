@@ -100,45 +100,20 @@ openwrt 19.07 build:
   image: debian:10
   script:
     # Prep build directory
-    - mkdir -p openwrt1907/builds openwrt1907/logs
     - apt update
     - apt install -y rsync autoconf automake make libtool pkg-config
-    # OpenWrt driver
     # Build packages
     - ./autogen.sh
     - ./configure --prefix=/usr --includedir=\${prefix}/include --mandir=\${prefix}/share/man --infodir=\${prefix}/share/info --sysconfdir=/etc --localstatedir=/var
-    # Quick hack
-    - rm -rf openwrt-install deploy/openwrt-install
-    - make DESTDIR=openwrt-install install
-    - mkdir -p openwrt-install/etc/init.d
-    - mkdir -p openwrt-install/etc/netify-fwa
-    - mkdir -p openwrt-install/usr/sbin
-    - mkdir -p openwrt-install/var/run/netify-fwa
-    - cp deploy/openwrt/netify-fwa.init openwrt-install/etc/init.d/netify-fwa
-    - cp deploy/openwrt-install/etc/netify-fwa/* openwrt-install/etc/netify-fwa/
-    # Copy metadata files - temporary
-    - cp deploy/openwrt/app-proto-data.json openwrt-install/etc/netify-fwa/
-    - cp deploy/openwrt/netify-categories.json openwrt-install/etc/netify-fwa/
-    # Temporary workaround for init issues
-    #- cp deploy/openwrt-install/usr/sbin/netify-fwa openwrt-install/usr/sbin/netify-fwa
-    - cp deploy/openwrt/netify-fwa openwrt-install/usr/sbin/netify-fwa
-    - rm -f openwrt-install/usr/share/netify-fwa/nfa_fw_clearos.py
-    - rm -f openwrt-install/usr/share/netify-fwa/nfa_fw_firewalld.py
-    - rm -f openwrt-install/usr/share/netify-fwa/nfa_fw_clearos.py
-    - rm -f openwrt-install/usr/share/netify-fwa/nfa_fw_pf.py
-    - rm -f openwrt-install/usr/share/netify-fwa/nfa_fw_pfsense.py
-    - sed -i -e 's/^firewall-engine.*/firewall-engine = openwrt/' openwrt-install/etc/netify-fwa/netify-fwa.ini
-    - sed -i -e 's/^interfaces-external.*/interfaces-external = eth1/' openwrt-install/etc/netify-fwa/netify-fwa.ini
-    - sed -i -e 's/^interfaces-internal.*/interfaces-internal = br-lan/' openwrt-install/etc/netify-fwa/netify-fwa.ini
-    - sed -i -e 's/^mark-mask.*/mark-mask = 0xff0000/' openwrt-install/etc/netify-fwa/netify-fwa.ini
-    - sed -i -e 's/^mark-bitshift.*/mark-bitshift = 16/' openwrt-install/etc/netify-fwa/netify-fwa.ini
-    - tar -czvf netify-fwa.tar.gz -C openwrt-install .
-    # Copy packages and logs to artifacts
-    - mv netify-fwa.tar.gz openwrt1907/builds/
+    - sh ./deploy/openwrt/package/make-package.sh
+    # Copy packages to artifacts and rsync to mirror
+    - mkdir -p builds/netify-fwa/openwrt/19.07/noarch
+    - mv openwrt-package/netify-fwa-*.ipk builds/netify-fwa/openwrt/19.07/noarch/
+    - rsync -rtv builds/* master-mirror.egloo.ca::netify-builds/
   artifacts:
     when: always
     paths:
-    - openwrt1907
+    - builds
     expire_in: 30 days
 
 # -------------------------------------------------------------------------

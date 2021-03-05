@@ -80,6 +80,8 @@ AC_SUBST([volatilestatedir], [$localstatedir/run/$PACKAGE_TARNAME])
 AC_CONFIG_FILES([Makefile deploy/Makefile \
     deploy/clearos/netify-fwa.spec \
     deploy/debian/Makefile \
+    deploy/openwrt/os/Makefile \
+    deploy/openwrt/package/make-package.sh \
     pf/Makefile deploy/pfsense/Makefile \
     deploy/rpm/netify-fwa.spec \
     deploy/systemd/Makefile])
