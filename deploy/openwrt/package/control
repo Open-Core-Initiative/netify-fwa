@@ -1,6 +1,6 @@
 Package: netify-fwa
 Version: 1.2.5-1
-Depends: ipset, python3-urllib, python3-openssl, python3-codecs, python3-ctypes
+Depends: netifyd, ipset, python3-urllib, python3-openssl, python3-codecs, python3-ctypes
 Source: https://gitlab.com/netify.ai/public/netify-fwa/
 SourceName: netify-fwa
 License: GPL-3.0-or-later
