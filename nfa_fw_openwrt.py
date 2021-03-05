@@ -96,7 +96,7 @@ class nfa_fw_openwrt(nfa_fw_iptables):
             ipsets_existing = nfa_ipset.nfa_ipset_list(ipv)
 
             for rule in config_dynamic['rules']:
-                if rule['type'] == 'block' or rule['type'] == 'ipset' or rule['type'] == 'mark' or rule['type'] == 'prioipset':
+                if rule['type'] == 'block' or rule['type'] == 'ipset' or rule['type'] == 'mark':
                     if rule['type'] == 'mark':
                         # TODO: hard-coded for PoC. Review.
                         bitshift = 24
@@ -127,7 +127,7 @@ class nfa_fw_openwrt(nfa_fw_iptables):
                             syslog(LOG_WARNING, "Error creating ipset: %s" %(ipset.name))
                             continue
 
-                    if rule['type'] == 'ipset' or rule['type'] == 'prioipset':
+                    if rule['type'] == 'ipset':
                         continue;
 
                     directions = {}
@@ -168,11 +168,11 @@ class nfa_fw_openwrt(nfa_fw_iptables):
                 if ipv == 6 and rule['type'] != 'ipv6':
                     continue
 
-#                directions = ['-s', '-d']
+                directions = ['-s', '-d']
 
-#                for direction in directions:
-#                    self.add_rule('mangle', 'NFA_whitelist',
-#                        '%s %s -j ACCEPT' %(direction, rule['address']), ipv)
+                for direction in directions:
+                    self.add_rule('mangle', 'NFA_whitelist',
+                        '%s %s -j ACCEPT' %(direction, rule['address']), ipv)
 
     # Process flow
 
@@ -182,7 +182,7 @@ class nfa_fw_openwrt(nfa_fw_iptables):
             return
 
         for rule in nfa_global.config_dynamic['rules']:
-            if rule['type'] == 'block' or rule['type'] == 'ipset' or rule['type'] == 'prioipset' or rule['type'] == 'mark':
+            if rule['type'] == 'block' or rule['type'] == 'ipset' or rule['type'] == 'mark':
                 if not nfa_rule.flow_matches(flow['flow'], rule): continue
 
                 name = nfa_rule.criteria(rule)
