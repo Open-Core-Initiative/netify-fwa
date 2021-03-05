@@ -43,7 +43,7 @@ rm -f openwrt-root/usr/share/netify-fwa/nfa_fw_pfsense.py
 #---------------------------------------------------------------
 
 if [ -z "$1" ]; then
-    VERSION=`hostname`
+    VERSION=0.`hostname`
 else
     VERSION=$1
 fi
