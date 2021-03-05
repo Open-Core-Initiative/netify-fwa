@@ -43,13 +43,15 @@ rm -f openwrt-root/usr/share/netify-fwa/nfa_fw_pfsense.py
 #---------------------------------------------------------------
 
 if [ -z "$1" ]; then
-    VERSION=0.`hostname`
+    RELEASE=0.`hostname`
 else
-    VERSION=$1
+    RELEASE=$1
 fi
 
+VERSION=@PACKAGE_VERSION@-$RELEASE
+
 ROOT="openwrt-package"
-TARGET="$ROOT/netify-fwa-1.2.5-$VERSION.ipk"
+TARGET="$ROOT/netify-fwa-$VERSION.ipk"
 PKG_ROOT="$ROOT/package"
 
 rm -rf $PKG_ROOT
@@ -63,6 +65,11 @@ cp deploy/openwrt/package/control $PKG_ROOT/control
 cp deploy/openwrt/package/postinst $PKG_ROOT/postinst
 cp deploy/openwrt/package/prerm $PKG_ROOT/prerm
 cp deploy/openwrt/package/conffiles $PKG_ROOT/conffiles
+
+# Update version and size
+SIZE=`du -sb openwrt-root/ | awk '{ print $1 }'`
+sed -i -e "s/^Version:.*/Version: $VERSION/" $PKG_ROOT/control
+sed -i -e "s/^Installed-Size:.*/Installed-Size: $SIZE/" $PKG_ROOT/control
 
 # Package it
 tar --owner=root --group=root -C $PKG_ROOT --exclude=control.tar.gz --exclude=data.tar.gz -czf $PKG_ROOT/control.tar.gz .
