@@ -317,7 +317,7 @@ def nfa_main():
                 # Only interested in flows that have a remote partner
                 if jd['flow']['other_type'] != 'remote': continue
                 # Only interested in flows that originate from internal interfaces
-                if not jd['internal']: continue
+                # if not jd['internal']: continue
 
                 # We can only mark the following: TCP, UDP, SCTP, and UDPLite
                 if jd['flow']['ip_protocol'] != 6 and \
