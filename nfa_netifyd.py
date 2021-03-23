@@ -102,7 +102,7 @@ class netifyd:
                 "%s: Malformed JSON structure: expected length" %(self.uri))
             return None
 
-        data = self.fh.readline()
+        data = self.fh.read(jd['length'])
         if not data:
             return None
 
@@ -138,8 +138,12 @@ class netifyd:
 
         elif jd['type'] == 'agent_status':
             self.uptime = jd['uptime']
-            self.flows = jd['flows']
-            self.flows_delta = jd['flows_prev'] - jd['flows']
+            if 'flows' in jd:
+                self.flows = jd['flows']
+                self.flows_delta = jd['flows_prev'] - jd['flows']
+            elif 'flow_count' in jd:
+                self.flows = jd['flow_count']
+                self.flows_delta = jd['flows_count_prev'] - jd['flow_count']
 
         return jd
 
