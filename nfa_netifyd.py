@@ -143,7 +143,7 @@ class netifyd:
                 self.flows_delta = jd['flows_prev'] - jd['flows']
             elif 'flow_count' in jd:
                 self.flows = jd['flow_count']
-                self.flows_delta = jd['flows_count_prev'] - jd['flow_count']
+                self.flows_delta = jd['flow_count_prev'] - jd['flow_count']
 
         return jd
 
