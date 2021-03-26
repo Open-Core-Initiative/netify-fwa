@@ -27,7 +27,6 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
 
-import nfa_global
 import nfa_ipset
 import nfa_rule
 import nfa_util
@@ -173,42 +172,3 @@ class nfa_fw_openwrt(nfa_fw_iptables):
                 for direction in directions:
                     self.add_rule('mangle', 'NFA_whitelist',
                         '%s %s -j ACCEPT' %(direction, rule['address']), ipv)
-
-    # Process flow
-
-    def process_flow(self, flow):
-
-        if nfa_global.config_dynamic is None:
-            return
-
-        for rule in nfa_global.config_dynamic['rules']:
-            if rule['type'] == 'block' or rule['type'] == 'ipset' or rule['type'] == 'mark':
-                if not nfa_rule.flow_matches(flow['flow'], rule): continue
-
-                name = nfa_rule.criteria(rule)
-
-                if rule['type'] == 'ipset':
-                    ipset_type= "hash:ip"
-                else:
-                    ipset_type= "hash:ip,port,ip"
-
-                ipset = nfa_ipset.nfa_ipset(name, flow['flow']['ip_version'], 0, ipset_type)
-
-                if not ipset.upsert( \
-                    flow['flow']['other_ip'], flow['flow']['other_port'], \
-                    flow['flow']['local_ip']):
-                    syslog(LOG_WARNING, "Error upserting ipset with flow match.")
-                else:
-                    nfa_global.stats['blocked'] += 1
-
-                break
-
-    # Expire matches
-
-    def expire_matches(self):
-        pass
-
-    # Test
-
-    def test(self):
-        syslog(LOG_DEBUG, "chains: %s" %(self.get_chains()))

@@ -347,20 +347,26 @@ class nfa_fw_iptables():
             return
 
         for rule in nfa_global.config_dynamic['rules']:
-            if rule['type'] != 'block': continue
-            if not nfa_rule.flow_matches(flow['flow'], rule): continue
+            if rule['type'] == 'block' or rule['type'] == 'ipset' or rule['type'] == 'mark':
+                if not nfa_rule.flow_matches(flow['flow'], rule): continue
 
-            name = nfa_rule.criteria(rule)
+                name = nfa_rule.criteria(rule)
 
-            ipset = nfa_ipset.nfa_ipset(name, flow['flow']['ip_version'])
-            if not ipset.upsert( \
-                flow['flow']['other_ip'], flow['flow']['other_port'], \
-                flow['flow']['local_ip']):
-                syslog(LOG_WARNING, "Error upserting ipset with flow match.")
-            else:
-                nfa_global.stats['blocked'] += 1
+                if rule['type'] == 'ipset':
+                    ipset_type= "hash:ip"
+                else:
+                    ipset_type= "hash:ip,port,ip"
 
-            break
+                ipset = nfa_ipset.nfa_ipset(name, flow['flow']['ip_version'], 0, ipset_type)
+
+                if not ipset.upsert( \
+                    flow['flow']['other_ip'], flow['flow']['other_port'], \
+                    flow['flow']['local_ip']):
+                    syslog(LOG_WARNING, "Error upserting ipset with flow match.")
+                else:
+                    nfa_global.stats['blocked'] += 1
+
+                break
 
     # Expire matches
 
