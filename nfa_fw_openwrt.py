@@ -64,7 +64,7 @@ class nfa_fw_openwrt(nfa_fw_iptables):
         )
 
         if result['rc'] == 0:
-            return [result['stdout']]
+            return result['stdout'].split(' ')
         else:
             return self.nfa_config.get('iptables', 'interfaces-external').split(',')
 
@@ -74,7 +74,7 @@ class nfa_fw_openwrt(nfa_fw_iptables):
         )
 
         if result['rc'] == 0:
-            return [result['stdout']]
+            return result['stdout'].split(' ')
         else:
             return self.nfa_config.get('iptables', 'interfaces-internal').split(',')
 

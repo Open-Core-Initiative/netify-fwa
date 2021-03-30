@@ -189,6 +189,12 @@ class nfa_fw_iptables():
             syslog(LOG_ERR, "No interfaces with roles defined.")
             return False
 
+        for iface in ifn_int:
+            syslog(LOG_DEBUG, "Prepping internal interface hooks: %s" %(iface))
+
+        for iface in ifn_ext:
+            syslog(LOG_DEBUG, "Prepping external interface hooks: %s" %(iface))
+
         # Create whitelist chain
         for ipv in ipvs:
             self.add_chain('mangle', 'NFA_whitelist', ipv)
