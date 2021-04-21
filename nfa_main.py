@@ -347,7 +347,7 @@ if __name__ == "__main__":
 
     try:
         params, args = getopt(sys.argv[1:],
-            'd', (
+            'dR', (
                 'debug',
                 'save-default-config',
                 'version',
@@ -361,6 +361,8 @@ if __name__ == "__main__":
     for option in params:
         if option[0] == '-d' or option[0] == '--debug':
             nfa_global.debug = True
+        elif option[0] == '-R':
+            nfa_global.foreground = True
         elif option[0] == '--save-default-config':
             print("Generating default configuration file: %s" %(NFA_CONF))
             nfa_config.save_main(NFA_CONF, nfa_global.config)
@@ -372,7 +374,7 @@ if __name__ == "__main__":
             print("Netify FWA v%s" %(NFA_VERSION))
             sys.exit(0)
 
-    if not nfa_global.debug:
+    if not nfa_global.debug and not nfa_global.foreground:
         nfa_global.log_options = LOG_PID
         openlog('netify-fwa', nfa_global.log_options, LOG_DAEMON)
         if not nfa_create_daemon():

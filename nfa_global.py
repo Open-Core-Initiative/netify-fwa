@@ -17,6 +17,7 @@
 from syslog import LOG_PID, LOG_PERROR
 
 debug = False
+foreground = False
 
 fw = None
 fw_sync = []
