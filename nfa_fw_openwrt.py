@@ -59,9 +59,16 @@ class nfa_fw_openwrt(nfa_fw_iptables):
 
     def get_external_interfaces(self):
 
+        # Get wan interface name in OpenWrt 21.02+
         result = nfa_util.exec(
-            'nfa_fw_openwrt::get_external_interfaces', ["uci", "get", "network.wan.ifname"]
+            'nfa_fw_openwrt::get_external_interfaces', ["uci", "get", "network.wan.device"]
         )
+
+        # This modification gets wan interface name in OpenWrt 19.07, in case previous try fails
+        if result['rc'] != 0:
+            result = nfa_util.exec(
+                'nfa_fw_openwrt::get_external_interfaces', ["uci", "get", "network.wan.ifname"]
+            )
 
         if result['rc'] == 0:
             return result['stdout'].split(' ')
@@ -69,9 +76,17 @@ class nfa_fw_openwrt(nfa_fw_iptables):
             return self.nfa_config.get('iptables', 'interfaces-external').split(',')
 
     def get_internal_interfaces(self):
+
+        # Get lan interface name in OpenWrt 21.02+
         result = nfa_util.exec(
-            'nfa_fw_openwrt::get_external_interfaces', ["uci", "get", "network.lan.ifname"]
+            'nfa_fw_openwrt::get_external_interfaces', ["uci", "get", "network.lan.device"]
         )
+
+        # This modification gets lan interface name in OpenWrt 19.07, in case previous try fails
+        if result['rc'] != 0:
+            result = nfa_util.exec(
+                'nfa_fw_openwrt::get_external_interfaces', ["uci", "get", "network.lan.ifname"]
+            )
 
         if result['rc'] == 0:
             return result['stdout'].split(' ')
