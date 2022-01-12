@@ -18,7 +18,7 @@ stages:
 centos 7 build:
   stage: build
   tags:
-    - os-manager
+    - netify-docker
   image: registry.gitlab.com/egloo.ca/os-manager/builder-image:os7
   script:
     # Prep build directory
@@ -45,7 +45,7 @@ centos 7 build:
 centos 8 build:
   stage: build
   tags:
-    - os-manager
+    - netify-docker
   image: registry.gitlab.com/egloo.ca/os-manager/builder-image:os8
   script:
     # Prep build directory
@@ -72,7 +72,7 @@ centos 8 build:
 debian 10 build:
   stage: build
   tags:
-    - os-manager
+    - netify-docker
   image: debian:10
   script:
     # Prep build directory
@@ -96,7 +96,7 @@ debian 10 build:
 openwrt 19.07 build:
   stage: build
   tags:
-    - os-manager
+    - netify-docker
   image: debian:10
   script:
     # Prep build directory
