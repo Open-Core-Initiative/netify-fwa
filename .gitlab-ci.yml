@@ -8,7 +8,7 @@ stages:
 openwrt 19.07 build:
   stage: build
   tags:
-    - netify-docker
+    - docker
   image: debian:10
   script:
     # Prep build directory
