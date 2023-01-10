@@ -19,9 +19,8 @@ openwrt 19.07 build:
     - ./configure --prefix=/usr --includedir=\${prefix}/include --mandir=\${prefix}/share/man --infodir=\${prefix}/share/info --sysconfdir=/etc --localstatedir=/var
     - sh ./deploy/openwrt/package/make-package.sh 0.$CI_COMMIT_SHORT_SHA
     # Copy packages to artifacts and rsync to mirror
-    - mkdir -p builds/netify-fwa/openwrt/19.07/noarch
-    - mv openwrt-package/netify-fwa-*.ipk builds/netify-fwa/openwrt/19.07/noarch/
-    - rsync -rtv builds/* master-mirror.egloo.ca::netify-builds/
+    - mkdir -p builds/netify-fwa
+    - mv openwrt-package/netify-fwa-*.ipk builds/netify-fwa
   artifacts:
     when: always
     paths:
