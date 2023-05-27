@@ -17,7 +17,7 @@ permissions:
 jobs:
   build:
     runs-on: self-hosted
-    container: debain:10
+    container: debian:10
     steps:
       - name: Checkout
         uses: actions/checkout@v3
