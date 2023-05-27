@@ -30,4 +30,4 @@ jobs:
       - run: mv openwrt-package/netify-fwa-*.ipk builds/netify-fwa
       - uses: actions/upload-artifact@v3
         with:
-          name: builds
+          path: builds
