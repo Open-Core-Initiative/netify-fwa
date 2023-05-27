@@ -1,0 +1,33 @@
+name: building netify agent
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["master"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: self-hosted
+    container: debain:10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - run: apt update
+      - run: apt install -y rsync autoconf automake make libtool pkg-config
+      - run: ./autogen.sh
+      - run: ./configure --prefix=/usr --includedir=\${prefix}/include --mandir=\${prefix}/share/man --infodir=\${prefix}/share/info --sysconfdir=/etc --localstatedir=/var
+      - run: sh ./deploy/openwrt/package/make-package.sh 0.${GITHUB_SHA}
+      - run: mkdir -p builds/netify-fwa
+      - run: mv openwrt-package/netify-fwa-*.ipk builds/netify-fwa
+      - uses: actions/upload-artifact@v3
+        with:
+          name: builds
